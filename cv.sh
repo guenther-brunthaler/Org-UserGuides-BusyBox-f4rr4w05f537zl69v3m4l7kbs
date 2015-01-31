@@ -1,5 +1,5 @@
 #! /bin/sh
-a2x.py -f text vi.txt
+a2x.py -f text vi.asciidoc
 sed -e 's,ü,ue,g' vi.text \
 | iconv -t ISO-8859-1 \
 | tr $'\xa0' ' ' \
