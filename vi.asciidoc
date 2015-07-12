@@ -65,7 +65,7 @@ Initial (non-edit) mode
 | f   | Move to next character within current line matching the one typed after the command.
 |=================================
 
-.Movement commands which to NOT work as region definitions.
+.Movement commands which do NOT work as region definitions.
 [options="autowidth"]
 |=================================
 | \|  | Like "0" if used without numeric prefix; otherwise move to that column.
