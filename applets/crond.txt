@@ -40,7 +40,7 @@ BusyBox crond holds all active crontabs in memory (about 160 Bytes per crontab e
 
 Besides containing the crontabs directory, the cron spool directory (defaults to /var/spool/cron) itself is not used for anything, except that it will be used as the current directory for cron jobs for which chdir $HOME does not work for some reason.
 
-Whether the "cron.update"-mechanism is used to enforce reloading a crontab or whether the mtime of the crontab directory triggers reading new or updating existing crontabs, both mechanisms will only take effect the next time the crond daemin awakes. It does this every minute, and there is no way (such as SIGHUP) to make it reread crontabs immediately. However, there should be little trouble due to this, because cron jobs have only minute-resolution anyways.
+Whether the "cron.update"-mechanism is used to enforce reloading a crontab or whether the mtime of the crontab directory triggers reading new or updating existing crontabs, both mechanisms will only take effect the next time the crond daemin awakes. It does this every minute, and there is no way (such as SIGHUP) to make it reread crontabs immediately. However, there should be little trouble due to this, because cron jobs have only minute-resolution anyway.
 
 When the daemon starts or the mtime of the crontab directory is changed, it is "scanned". This means that every directory entry is read, and must be a valid crontab file, except possible for "cron.update" which may exist (and will then be deleted and ignored otherwise by the scanning process).
 
