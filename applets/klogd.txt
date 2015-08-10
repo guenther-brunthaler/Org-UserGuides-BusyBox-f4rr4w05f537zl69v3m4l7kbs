@@ -1,0 +1,31 @@
+klogd
+=====
+
+klogd reads the kernel log and sends it to the currently running syslog daemon. It should therefore be started *after* syslogd - not before it!
+
+The -c N parameter makes the kernel print kernel messages more urgent than N to the system console, i. e. screwing up your screen in most cases.
+
+"More urgent" means here, messages with a higher priority (= a lower numberical value) will be printed to the console.
+
+As allowed values for N range from 1 to 8, -c 8 prints everything and -c 1 prints only emergencies (which cannot be disabled).
+
+Otherwise, the following priority levels are defined:
+
+0 ("emerg"): system is unusable.
+1 ("alert"): action must be taken immediately.
+2 ("crit"): critical conditions.
+3 ("err"): error conditions.
+4 ("warning"): warning conditions.
+5 ("notice"): normal but significant condition.
+6 ("info"): informational.
+7 ("debug"): debug-level messages.
+
+If -c is not specified at all, the current kernel console log level is simply not changed from its current value.
+
+See "man klogctl" for more details about the kernel's console logging level.
+
+In order to disable console logging completely, a different approach than using the -c option is recommended: Start klog without the -c option ans use
+dmsg to disable all console logging:
+
+$ dmsg -D
+$ klogd
