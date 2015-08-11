@@ -29,3 +29,117 @@ dmsg to disable all console logging:
 
 $ dmsg -D
 $ klogd
+
+There is one problem with klogd, though: It makes the heavy mistake of using glibc's syslog() call for emitting its log messages.
+
+Unfortunately, this implementation is broken in the regard that it converts all facilities "kern" into "user" before actually sending it.
+
+The klogd source code even mentions this, and proclaims that because of this busybox would use its own syslog() implementation.
+
+Unfortunately, this ist just not true... and that is why all klogd messages sent to syslogd appear as originating from facility "user" rather than "kern".
+
+This can be fixed by patching BusyBox to send the log messages directly to /dev/log instead of using the syslog glibc API.
+
+I examined the protocol, and here is what I have found out.
+
+First of all, /dev/log needs send/receive datagrams in the UNIX domain socket protocol. It is not a pipe nor is it used in stream mode.
+
+Every log message is send and received as a separate datagram. Obviously, this limits the maximum size of each log message by the MRU of the /dev/log socket.
+
+A log message consists logically of the following components:
+
+* ident: A string which identifies the originator of the message.
+* facility: The subsystem to which the originator belongs. See below.
+* priority: One of the 7 "levels" described above.
+* message: The actual text of the log message.
+
+The facilities are:
+
+* auth
+* authpriv
+* cron
+* daemon
+* ftp
+* kern
+* lpr
+* mail
+* mark
+* news
+* syslog
+* user
+* uucp
+* local0
+* local1
+* local2
+* local3
+* local4
+* local5
+* local6
+* local7
+
+They are assigned integer numbers, just like the priorities, except that the numbers are always a multiple of 8.
+
+This means that facility and priority numbers can be added, and they can always be separated again by looking at the octal representation of the sum: The least significant octal digit represents the priority, the remaining digits represent the facility.
+
+When a log message is created, facility and priority are send not as the textual representation of their names, but rather as the textual representation of the sum of the assigned integer values, just as explained above. However, decimal representation is used rather than the more obvious octal one. In addition, the resulting number is put in angle brackets like so: "<99>".
+
+As an example, facility "kern" is mapped to integer 0, and "user" is mapped to integer 8.
+
+"user.info" has priority 6 and facility 8, so it would be transmitted as "<14>".
+
+Similarly, "kern.crit" has priority 2 and facility 0, giving "<2>".
+
+A fully formated syslog message looks then like this:
+
+<13>Aug 11 01:40:56 root: hello
+
+The "<13>" is the sum of 8 + 5 and therefore encodes "user.notice".
+
+Next follows the timestamp which must always have the format
+
+123456789012345
+Aug 11 01:40:56
+Mmm dd hh:mm:ss
+
+However, it may be missing completely.
+
+Following that the "ident" follows, a colon and a space, and then the actual message text.
+
+The message text is normally not terminated with a newline or a NUL byte, but rather just by the end of the datagram.
+
+Embedded newlines are normally tolerated by loggers, but trailing newlines will be stripped.
+
+The "ident"-part (as well as the colon and space which follow it) are also optional. Actually, there is no way to cleanly tell apart the "ident" from a message text starting with some text followed by a colon and a space if the "ident"-part is missing, after the message has been formatted.
+
+Note that there is no "hostname"-part at all - it is inserted by syslogd itself.
+
+So, how can klogd sent the kernel messages without using syslog but rather directly sending UNIX domain datagrams to the /dev/log socket?
+
+First, there is some good news: The kernel uses a very simimlar reprsentation for its log messages. Here is a log entry from the kernel log in raw format:
+
+<6>[    0.000000] Booting Linux on physical CPU 0x0
+
+The most important aspect here is that the kernel uses *exactly* the same representation for facility and priority using angle brackets, so there is *nothing* which needs converting! klogd can just copy the angle-bracketed expression into its own message to be sent to /dev/log.
+
+Obviously, the kernel uses a different format for the timestamp: The number of seconds which has elapsed since boot, with some fraction digits for more precision.
+
+Otherwise, the formats are identical: Although the "ident" is missing in the above case, here is another kernel log entry which contains one:
+
+
+
+Otherwise, the formats are identical: Although the "ident" is missing in the above case, here is another kernel log entry which contains one:
+
+<6>[    0.000337] Console: colour dummy device 80x30
+
+And here is another case which proves that "ident" and message can also not always be clearly separated in kernel messages as well:
+
+<6>[    0.000000] PID hash table entries: 2048 (order: 1, 8192 bytes)
+
+Nevertheless, this will not concern klogd, because all it needs to do is copying ident + message together as if it were a single string! And actually, it is. The "ident" and "message" separation is purely intentional and nothing to be enforced by syslogd.
+
+So, the only thing klogd needs to do, is replacing the part between the angle brackets with a standard syslog time stamp as viewed above! Otherwise, the message need not be altered.
+
+I presume the time part from the kernel log is as optional as it is for syslog - therefore klogd needs to check for the square brackets and assume the time part is missing if they are not found.
+
+It might even be good to check for the priority/facility and assume some default value if it is missing.
+
