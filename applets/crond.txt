@@ -70,7 +70,7 @@ If MAILTO is enabled, "sendmail -ti" will be run for mailing the cron job's outp
 
 "-i": Sets the IgnoreDots option to true. The IgnoreDots (i) option tells sendmail to treat any line that contains only a single period as ordinary text, not as an end-of-file indicator.
 
-crond runs "sendmail" as an external command. Note that while BusyBox provided an implementation of sendmail, it can only send mail to an SMTP server, and is incapable of delivering mail locally to a user on the same machine.
+crond runs "sendmail" as an external command. Note that while BusyBox provides an implementation of sendmail, it can only send mail to an SMTP server, and is incapable of delivering mail locally to a user on the same machine.
 
 Verifying operation:
 
