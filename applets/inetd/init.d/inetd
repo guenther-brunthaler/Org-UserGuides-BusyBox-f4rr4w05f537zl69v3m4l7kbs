@@ -1,0 +1,101 @@
+#! /bin/sh
+
+pidfile="/var/run/inetd.pid"
+conffile=/etc/inetd.conf
+realconf=/var/run/inetd.conf
+newconf=$realconf.new
+
+# Print lines "$interface_name:$ip_address".
+enum_ifc() {
+	local PATH=/sbin:/usr/sbin:$PATH
+	LC_ALL=C ifconfig | {
+		p1='[^[:space:]]\+'
+		p2=':'
+		p3='[[:space:]].*[[:space:]]\+inet[[:space:]]\+'
+		p4='[^[:space:]]\+'
+		while IFS= read -r line
+		do
+			if
+				match=`expr x"$line" : x"\($p1\)$p2" || :`
+				test -n "$match"
+			then
+				ifc=$match
+			elif
+				match=`expr x"$line" : x"$p3\($p4\)" || :`
+				test -n "$match"
+			then
+				ip=$match
+				printf '%s\n' "$ifc:$ip"
+			fi
+		done
+	}
+}
+
+# Print all $ip_address from enum_ifc() not matching "case"-condition $1, or
+# print everything if $1 is empty.
+exclude_ifc() {
+	enum_ifc | {
+		sep=
+		while IFS=: read ifc ip
+		do
+			match=
+			test -n "$1" && eval "case $ifc in $1) match=Y; esac"
+			test -n "$match" && continue
+			printf '%s' "$sep$ip"
+			if test -z "$sep"
+			then
+				sep=`printf ',\\\\\\n:'`; sep=${sep%?}
+			fi
+		done
+	}
+}
+
+# Preprocess $conffile into $realconf.
+preprocess() {
+	# $INTERFACES_EXCEPT(<GLOB> ... <GLOB>):
+	local line pfx match sfx p1 p2 p3 p4 p5
+	p1='[[:space:]]*[$]'
+	p2='INTERFACES_EXCEPT('
+	p3='[^)]*'
+	p4=')'
+	p5='.*'
+	while IFS= read -r line
+	do
+		if test x`expr x"$line" : x"$p1$p2$p3$p4$p5" || :` != x0
+		then
+			pfx=`expr x"$line" : x"\($p1\)"`; pfx=${pfx%?}
+			match=`expr x"$line" : x"$p1$p2\($p3\)"`
+			sfx=`expr x"$line" : x"$p1$p2$p3$p4\($p5\)"`
+			match=`
+				printf %s "$match" | sed '
+					s/[[:space:]]\+/|/g
+					s/|\{2,\}/|/g; s/^|//
+					s/|$//
+				'
+			`
+			match=`exclude_ifc "$match"`
+			line="$pfx$match$sfx"
+		fi
+		printf '%s\n' "$line"
+	done < "$conffile" > "$newconf"
+	mv -- "$newconf" "$realconf"
+}
+
+refresh() {
+	is_newer_than "$conffile" "$realconf" && preprocess
+}
+
+start_pre() {
+	refresh
+}
+
+reload_pre() {
+	refresh
+}
+
+stop_post() {
+	rm -- "$realconf"
+}
+
+# TO DO: Actually start and stop the service, and invoke the above
+# functions.
