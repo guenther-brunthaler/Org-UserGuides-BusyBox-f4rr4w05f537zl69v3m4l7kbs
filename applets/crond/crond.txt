@@ -1,0 +1,32 @@
+BusyBox crond
+=============
+
+The daemon runs with root privileges and uses the configures crontab-directory as its working directory. By default, this is "/var/spool/cron/crontabs".
+
+The easiest way to edit or create cron jobs within that directory is by using BusyBox's crontab applet. This also takes care of the cron.update-mechanism (see below) and ensures that correct permissions are used.
+
+Unfortunately, this requires a SUID BusyBox executable in order to be usable by non-privileged user, which does not seem to be a good idea because of security concerns. But at least user root can always use "crontab" to edit the crontabs for all users.
+
+For using crontabs without help of the "crontab" applet, read on.
+
+If a file "cron.update" is placed in the /var/spool/cron/crontabs directory, the first word from this file will be read which must be the name of an existing user. Then "cron.update" will be deleted and the crontab for this user will be re-read.
+
+The crontabs are also read from the same directory and are files with the same name as the user they belong to, and must be owned by user root. They should only be readable and writable by the owner and no-one else (i. e. chmod 600).
+
+Besides containing the crontabs directory, the cron spool directory (defaults to /var/spool/cron) itself is not used for anything, except that it will be used as the current directory for cron jobs for which chdir $HOME does not work for some reason.
+
+BusyBox crond holds all active crontabs in memory (about 160 Bytes per crontab entry for the fields and pointers plus the memory required for the command string itself); they are only read from disk when the process starts up or when an update of a user's crontab is enforced. In addition, the crontab directory is re-scanned every hour for changes. The same is done if the modification time of the crontab directory changes.
+
+Whether the "cron.update"-mechanism is used to enforce reloading a crontab or whether the mtime of the crontab directory triggers reading new or updating existing crontabs, both mechanisms will only take effect the next time the crond daemin awakes. It does this every minute, and there is no way (such as SIGHUP) to make it reread crontabs immediately. However, there should be little trouble due to this, because cron jobs have only minute-resolution anyway.
+
+When the daemon starts or the mtime of the crontab directory is changed, the crontab directory is "scanned". This means that every directory entry is read, and must be a valid crontab file, except possible for "cron.update" which may exist (and will then be deleted and ignored otherwise by the scanning process).
+
+Verifying operation:
+
+When running
+
+$ crond -f -d0
+
+crond runs in the foreground and should immediately report all found cron jobs to standard error.
+
+If all jobs have been detected and parsed correctly, the setup works and the daemon can be run in the background, logging to syslog then.

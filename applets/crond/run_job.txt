@@ -1,0 +1,38 @@
+Executing commands from BusyBox crontabs
+========================================
+
+When a cron job is run, the following environment variables will be set up explicitly:
+
+HOME, LOGNAME, USER, SHELL.
+
+In addition, exported shell variables (such as PATH) will be inherited normally.
+
+SHELL is initially set to /bin/sh, and LOGNAME and HOME are set from the /etc/passwd line of the crontab's owner. (USER is set to the same as LOGNAME.)
+
+If changing the current directory to $HOME does not succeed for some reason, the job will be run with the current directory set to the parent directory of the crontabs sub-directory instead. By default, this will be /var/spool/cron.
+
+Also, "SHELL" and "MAILTO" may be set/overriden from within the cron job itself via assignment statements in the affected user's crontab.
+
+Note that SHELL is *not* taken from the user's /etc/passwd entry!
+
+The command to be executed by the cron job is passed to the effective $SHELL and passed as a single argument following the shell's "-c" option. Normally, $SHELL will not be a login-shell, i. e. ~/.profile will not be read.
+
+If I understood the code correctly, SHELL and MAILTO may be redefined multiple times within a crontab files, and the values effect the lines following it before the next change. Therefore, different SHELL and MAILTo values can be used in a single crontab, at least in the current implementation.
+
+Finally, crond will impersonate the crontab's users when actually running the command, dropping it's elevated privileges (after forking, of course).
+
+The current directory where the command will be started will be its HOME, or the cron spool directory as a fallback if changing the current directory to HOME that does not work.
+
+If MAILTO is enabled, "sendmail -ti" will be run for mailing the cron job's output.
+
+"-t": The -t command-line switch causes sendmail to gather its list of recipients from the message's header in addition to gathering them from its command line. When this switch is specified, sendmail gathers recipient names from the To:, Cc:, and Bcc: header lines. It also gathers recipient names from its command line if any were listed there. Duplicates are discarded, and the message is delivered to all that remain.
+
+"-i": Sets the IgnoreDots option to true. The IgnoreDots (i) option tells sendmail to treat any line that contains only a single period as ordinary text, not as an end-of-file indicator.
+
+crond runs "sendmail" as an external command. Note that while BusyBox provides an implementation of sendmail, it can only send mail to an SMTP server, and is incapable of delivering mail locally to a user on the same machine.
+
+I noticed that sendmail error messages will be logged to crond's standard error, even though crond has been instructed to log to syslog (but it *was* run as a foreground job). It might therefore be a good idea to redirect standard output and error of crond to /dev/null or to a log file in order to avoid littering the console with possible sendmail messages.
+
+Another thing to not is that crond does not seem to care about successful command invocation. As soon as it has delivered the command to the shell, it does not care any more, even if the shell is unable to find the command. Neither does it care about the return code of the command, which is not even mentioned in the log messages when log level 0 (the most verbose) is used.
+
+However, it does write messages to standard output and standard error of the crond process - which is why they should be redirected to /dev/null or a log file, just as for sendmail (see above).

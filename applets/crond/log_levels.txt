@@ -1,0 +1,12 @@
+BusyBox crond log levels
+========================
+
+The log level does only seem to have an effect when logging to standard error instead of syslog.
+
+Regarding syslog, only command invocations (user, pid, command) are logged no matter what log level is used, and no indication of success/failure can be found in the log messages.
+
+Then logging with -d, the log levels seem to have the following effect:
+
+Levels 0 - 5: Display all crontab entries once they have been parsed. This includes the crontab lines as well as the resulting bit field for all 5 match fields. A value of "1" in the bit field means that the current field value matching the bit index matches the field expression. It also logs which processes are started and how long the daemon is put to sleep between checks.
+
+Levels 6 - 8 display the same information that will always be logged to syslog, i. e. user, pid and command. It omits all the other information about crontab parsing and wakeup times.

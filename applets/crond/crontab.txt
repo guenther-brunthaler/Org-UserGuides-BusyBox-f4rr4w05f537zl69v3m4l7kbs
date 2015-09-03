@@ -1,0 +1,41 @@
+crontab-Files Format
+====================
+
+The crontab files are read using the normal BusyBox configuration file parser, and thus allow the usual comments and empty lines.
+
+Otherwise, lines starting "SHELL=" and "MAILTO=" (only if configures) lines are explcitly handled; it remains unclear whether spaces around the "=" are also accepted, or whether other environment variables can be set as well.
+
+Except for comment/assignment-lines, all crontab-lines are structured as 6 whitespace-separated fields on each line as follows:
+
+* Minutes (0-59)
+
+* Hours (0-23)
+
+* Days (1-31)
+
+* Months (1-12 or 3-letter lower case abbreviation)
+
+* Days of Week (0 = sunday or 3-letter lower case abbreviation)
+
+* The command to execute if the beforementioned fields match the current date and time
+
+Except for the command field, all of the above fields support the following additional features (from highest to lowerst operator precedence):
+
+"*" includes all possible values in the set of matching values for this field, i. e. this field will matches every date/time value.
+
+"<from>-<to>" includes all values for the field in ascending order between <from> and <to> (both boundary values inclusive).
+
+"<range>/<skip>" reduces the selected values from a range to its first value and then every <skipth>th value after that. For instance "3-9/2" selects only values 3, 5, 7 and 9 for inclusion.
+
+"<entryN>,<entryN+1>" allows to specify multiple value ranges (which may include skips) for the field which will all be included.
+
+Using the above syntax, all value fields in a crontab line represent arrays of all possible values, where every array value represents a boolean whether this value will be selected or deselected for matching the current date/time.
+
+If the values representing the current/date time matches for *all* fields of a crontab entry line, the associated command will be run.
+
+Here is an example crontab which runs a no-op command every minute:
+
+#                     1-12 or  0-6 or
+# 0-59    0-23  1-31  Jan-Dec  Sun-Sat
+# Minute  Hour  Day   Month    DOW      Command
+  *       *     *     *        *        true
