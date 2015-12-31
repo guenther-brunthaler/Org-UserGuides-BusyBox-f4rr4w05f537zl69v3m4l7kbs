@@ -1,0 +1,43 @@
+BusyBox udhcpc
+==============
+
+This is a DHCP client which runs a script ("/usr/share/udhcpc/default.script" by default) whenever DHCP events occur.
+
+The script is passed information via exported environment variables as well as via its first argument.
+
+Possible first arguments:
+
+deconfig
+leasefail
+bound
+renew
+nak
+
+Environment variables:
+interface=IFACE
+ip=N.N.N.N
+siaddr=IP # IP address of next server to use in bootstrap
+boot_file=FILE
+sname=SERVER_HOSTNAME
+mask=UINT # Hmmm ... subnet mask as an integer?
+opt$UINT=$HEXSTRING
+
+'router' option [21]
+
+Your ISP better supply the "ip" and "subnet" 
+variables or all of this is for not. 
+"router", "dns", "lease" should be there also
+along with a few others.
+
+OPTION_STATIC_ROUTES
+"IP/MASK ROUTER IP2/MASK2 ROUTER2"
+
+#define DHCP_ROUTES           0x21
+#define DHCP_ROUTER           0x03
+#define DHCP_DNS_SERVER       0x06
+
+It seems the script only needs to do the following things:
+
+* Set $router as the default gateway
+
+* Set up $dns as the address of the DNS server

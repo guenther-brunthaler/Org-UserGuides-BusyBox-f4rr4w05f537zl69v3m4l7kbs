@@ -1,0 +1,16 @@
+default.script
+==============
+
+This script is an example for the script the udhcpc applet may use as a callback script.
+
+Currently it supports only IPv4 and handles DNS in the following way:
+
+* It assumes there exists a directory /var/run/resolv.conf (typically located inside a RAM disk) where it shall manage symlinks. This directory shell be managed by this script (except for initial setup). Let this directory be $RUNTIME in the remaining description.
+
+* The following symlinks need to be set up initially: $RUNTIME/default contains a static fallback version of /etc/resolv.conf to be used when no DNS information is provided by DHCP. Normally, this static fallback configuration is actually a symlink itself to some file in /etc, such as /etc/resolv.conf.fallback or similar. But such detail is beyond the scope of this script.
+
+* $RUNTIME/active is a symlink to the actual DNS configuration which shall be used. Typically, /etc/resolv.conf is also a symlink which points to $RUNTIME/active, but this is outside the scope of this script.
+
+* Whenever udhcpc receives DNS information for interface $IFC, it creates a file $RUNTIME/dns-$IFC containing a file in /etc/resolv.conf syntax containing this information. Then it changes the symlink $RUNTIME/active to point to this new file, thus making the new DNS configuration the current one.
+
+* When the DHCP lease is returned/released, the script re-targets the $RUNTIME/active symlink to point to $RUNTIME/default and the $RUNTIME/dns-$IFC file will be deleted.

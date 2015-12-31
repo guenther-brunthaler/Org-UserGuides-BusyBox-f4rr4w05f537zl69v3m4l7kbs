@@ -1,0 +1,104 @@
+#! /bin/sh
+
+set -e
+
+log() {
+	local pri=$1; shift
+	logger -t "$0" -p "daemon.$pri" "$*"
+}
+
+trap 'test $? = 0 || log err "BusyBox DHCP callback script failed!"' 0
+
+silent() {
+	"$@" > /dev/null 2>& 1 && return
+	log err "Assertion failure: $*"
+	false || exit
+}
+
+chkip() {
+	silent expr x"$1" : x'[0-9]\{1,3\}\([.][0-9]\{1,3\}\)\{3\}$'
+}
+
+chkifn() {
+	silent expr x"$1" : x'[a-z][-_a-z:0-9]\+$'
+}
+
+dns_fallback() {
+	if
+		test x"`readlink /var/run/resolv.conf/active`" \
+			= x"dns-$interface"
+	then
+		# "/var/run/resolv.conf/default" is typically a symlink to
+		# "/etc/resolv.conf.fallback" or similar.
+		silent test -f /var/run/resolv.conf/default
+		ln -sf default /var/run/resolv.conf/active
+	fi
+}
+
+no_route() {
+	while route del default gw 0.0.0.0 dev $interface
+	do
+		:
+	done
+}
+
+deconfig() {
+	chkifn "$interface"
+	dns_fallback
+        rm /var/run/resolv.conf/dns-$interface
+	no_route
+	silent ifconfig $interface 0.0.0.0
+}
+
+config() {
+	chkifn "$interface"
+	chkip "$ip"
+	set ifconfig $interface $ip
+	if test -n "$subnet"
+	then
+		chkip "$subnet"
+		set "$@" netmask $subnet
+	fi
+	if test -n "$broadcast"
+	then
+		chkip "$broadcast"
+		set "$@" broadcast $broadcast
+	else
+		set "$@" broadcast +
+	fi
+	silent "$@"
+	dns_fallback
+        no_route
+        if test -n "$router"
+        then
+        	local rt mt=0
+        	for rt in $router
+        	do
+        		chkip "$rt"
+			route add default gw $rt dev $interface metric $mt
+			mt=`expr $mt + 1`
+		done
+	else
+		log warning "DHCP did not provide a default route"	
+	fi
+	if test -n "$dns"
+	then
+		for ns in $dns
+		do
+			chkip "$ns"
+	        	echo "nameserver $ns"
+	        	log info "name server $ns"
+	        done > /var/run/resolv.conf/dns-$interface
+        	ln -sf dns-$interface /var/run/resolv.conf/active
+        else
+        	logc info "DHCP did not provide any name servers," \
+        		"using fallback servers"
+        fi
+}
+
+case $1 in
+	renew) deconfig; config;;
+	bound) config;;
+	deconfig | leasefail | nak) deconfig;;
+	*) log warning "Unsupported directive '$1'"
+esac
