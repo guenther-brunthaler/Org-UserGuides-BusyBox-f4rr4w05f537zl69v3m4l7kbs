@@ -5,7 +5,7 @@ klogd reads the kernel log and sends it to the currently running syslog daemon. 
 
 The -c N parameter makes the kernel print kernel messages more urgent than N to the system console, i. e. screwing up your screen in most cases.
 
-"More urgent" means here, messages with a higher priority (= a lower numberical value) will be printed to the console.
+"More urgent" means here, messages with a higher priority (= a lower numerical value) will be printed to the console.
 
 As allowed values for N range from 1 to 8, -c 8 prints everything and -c 1 prints only emergencies (which cannot be disabled).
 
@@ -24,13 +24,12 @@ If -c is not specified at all, the current kernel console log level is simply no
 
 See "man klogctl" for more details about the kernel's console logging level.
 
-In order to disable console logging completely, a different approach than using the -c option is recommended: Start klog without the -c option ans use
-dmsg to disable all console logging:
+In order to disable console logging completely, a different approach than using the -c option is recommended: Start klog without the -c option ans use dmsg to disable all console logging:
 
 $ dmsg -D
 $ klogd
 
-There is one problem with klogd, though: It makes the heavy mistake of using glibc's syslog() call for emitting its log messages.
+There is one problem with klogd, though: It makes the severe mistake of using glibc's syslog() call for emitting its log messages.
 
 Unfortunately, this implementation is broken in the regard that it converts all facilities "kern" into "user" before actually sending it.
 
@@ -42,9 +41,9 @@ This can be fixed by patching BusyBox to send the log messages directly to /dev/
 
 I examined the protocol, and here is what I have found out.
 
-First of all, /dev/log needs send/receive datagrams in the UNIX domain socket protocol. It is not a pipe nor is it used in stream mode.
+First of all, /dev/log needs to send/receive datagrams in the UNIX domain socket protocol. It is not a pipe nor is it used in stream mode.
 
-Every log message is send and received as a separate datagram. Obviously, this limits the maximum size of each log message by the MRU of the /dev/log socket.
+Every log message is sent and received as a separate datagram. Obviously, this limits the maximum size of each log message by the MRU of the /dev/log socket.
 
 A log message consists logically of the following components:
 
@@ -81,7 +80,7 @@ They are assigned integer numbers, just like the priorities, except that the num
 
 This means that facility and priority numbers can be added, and they can always be separated again by looking at the octal representation of the sum: The least significant octal digit represents the priority, the remaining digits represent the facility.
 
-When a log message is created, facility and priority are send not as the textual representation of their names, but rather as the textual representation of the sum of the assigned integer values, just as explained above. However, decimal representation is used rather than the more obvious octal one. In addition, the resulting number is put in angle brackets like so: "<99>".
+When a log message is created, facility and priority are sent not as the textual representation of their names, but rather as the textual representation of the sum of the assigned integer values, just as explained above. However, decimal representation is used rather than the more obvious octal one. In addition, the resulting number is put in angle brackets like so: "<99>".
 
 As an example, facility "kern" is mapped to integer 0, and "user" is mapped to integer 8.
 
@@ -103,7 +102,7 @@ Mmm dd hh:mm:ss
 
 However, it may be missing completely.
 
-Following that the "ident" follows, a colon and a space, and then the actual message text.
+Following that optional timestamp the "ident" follows, then a colon and a space, and then the actual message text.
 
 The message text is normally not terminated with a newline or a NUL byte, but rather just by the end of the datagram.
 
@@ -122,10 +121,6 @@ First, there is some good news: The kernel uses a very simimlar reprsentation fo
 The most important aspect here is that the kernel uses *exactly* the same representation for facility and priority using angle brackets, so there is *nothing* which needs converting! klogd can just copy the angle-bracketed expression into its own message to be sent to /dev/log.
 
 Obviously, the kernel uses a different format for the timestamp: The number of seconds which has elapsed since boot, with some fraction digits for more precision.
-
-Otherwise, the formats are identical: Although the "ident" is missing in the above case, here is another kernel log entry which contains one:
-
-
 
 Otherwise, the formats are identical: Although the "ident" is missing in the above case, here is another kernel log entry which contains one:
 
