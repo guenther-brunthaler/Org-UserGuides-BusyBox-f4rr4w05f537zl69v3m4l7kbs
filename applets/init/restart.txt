@@ -1,0 +1,20 @@
+The following steps assume BusyBox init has been configured to read its
+configuration from /run/inittab rather than from /etc/inittab.
+
+In order to re-exec init:
+
+$ cat inittab > /run/inittab
+$ cp nterm /run/
+$ kill -HUP 1 # Reload inittab; spawn tty8
+$ kill -QUIT 1 # Will re-exec, only tty8 left after this.
+
+On tty8, go to THIS dir then launch up services.
+
+A crucial point to understand re-exec of init is that init will kill
+any other running processed other than itself before restarting.
+
+This means any other shells running at the moment when init receives
+SIGQUIT will be killed as well.
+
+The only way how to make sure a shell will be available after
+re-exec'ing init is to start one from the new init's inittab.

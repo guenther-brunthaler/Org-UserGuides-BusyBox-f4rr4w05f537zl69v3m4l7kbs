@@ -1,0 +1,2 @@
+::restart:/usr/local/bin/busybox-pbyqxzl1ktqlk3fjm3arlrclg init
+tty8::respawn:/run/nterm
