@@ -144,6 +144,7 @@ config() {
         fi
 }
 
+export LC_CTYPE=POSIX # Ensure ASCII character ranges are used in regexes.
 case $1 in
 	renew) deconfig; config;;
 	bound) config;;
