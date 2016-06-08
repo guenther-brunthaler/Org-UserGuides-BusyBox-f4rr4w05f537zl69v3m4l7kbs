@@ -1,7 +1,7 @@
 BusyBox crond
 =============
 
-The daemon runs with root privileges and uses the configures crontab-directory as its working directory. By default, this is "/var/spool/cron/crontabs".
+The daemon runs with root privileges and uses the configured crontab-directory as its working directory. By default, this is "/var/spool/cron/crontabs".
 
 The easiest way to edit or create cron jobs within that directory is by using BusyBox's crontab applet. This also takes care of the cron.update-mechanism (see below) and ensures that correct permissions are used.
 
