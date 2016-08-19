@@ -1,0 +1,64 @@
+Ash sets at least the following shell variables:
+
+PPID
+PWD
+OPTIND
+
+Ash sets the following command in certain situations or depending on the build
+cconfiguration:
+
+OLDPWD
+RANDOM
+CDPATH
+
+Ash reads and honors the following environment variables (some support
+dependens on build settings):
+
+HOME
+HISTFILE
+HISTFILESIZE
+MAIL
+MAILPATH
+PS1
+PS2
+PS4
+LC_ALL
+LC_CTYPE
+LANG
+
+Escape sequences supported in $PS1:
+
+\a   ASCII bell character (07)
+\e   ASCII escape character (033)
+\n   newline
+\r   carriage return
+\\   backslash
+\nnn char with octal code nnn
+\$   if the effective UID is 0, a #, otherwise a $
+\w   current working directory, with $HOME abbreviated with a tilde
+     Note: we do not support $PROMPT_DIRTRIM=n feature
+\W   basename of the current working directory, with $HOME abbreviated with
+     a tillde
+\h   hostname up to the first '.'
+\H   hostname
+\u   username
+\[   begin a sequence of non-printing characters
+\]   end a sequence of non-printing characters
+\A   current time in 24-hour HH:MM format
+\t   for (weak) compatibility with other shells only: does the same as \A
+\T   same as \t
+\@   same as \t
+
+The read builtin supports the following options:
+
+-r              Do not interpret '\' specially
+-s              Turn off echo (tty only)
+-n NCHARS       Read NCHARS max
+-p PROMPT       Display PROMPT on stderr (if input is from tty)
+-t SECONDS      Timeout after SECONDS (tty or pipe only)
+-u FD           Read from given FD instead of fd 0
+
+Some notes on built-in commands:
+
+"cd" fully supports the "-" argument, $OLDPWD and $CDPATH as explained in the
+POSIX standard. Many people do not know about this useful POSIX feature.

@@ -1,0 +1,26 @@
+udhcpd
+======
+
+This is a DHCP server.
+
+Usage: udhcpd [-fS] [-I <ADDR>] [-P <N>] [<CONFFILE>]
+
+where
+
+-f        Run in foreground
+-S        Log to syslog too
+-I <ADDR> Local address
+-a <MSEC> Timeout for ARP ping (default 2000)
+-P <N>    Use port N (default 67)
+
+<CONFFILE> is the optional configuration file.
+
+It has a simple "<keyword> <value>"-syntax and also allows "#"-comments and empty lines.
+
+The file "udhcpd.conf" in the same directory as THIS file (which you are reading right now) represents an example <CONFFILE> and includes the default values for the various configuration values.
+
+It is actually a copy of the file examples/udhcp/udhcpd.conf from the BusyBox source archive.
+
+If you have a recent version of that source archive available, it might be better to look at the corresponding file in the source archive rather than at the copy here, because it might be outdated.
+
+On the other hand, the most frequently used options are unlikely to change in future versions of the example file, so the local copy in THIS directory might still be good enough.

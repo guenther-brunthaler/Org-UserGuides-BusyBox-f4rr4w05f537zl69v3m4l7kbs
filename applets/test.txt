@@ -1,0 +1,54 @@
+test(1) accepts the following grammar:
+
+oexpr   ::= aexpr | aexpr "-o" oexpr;
+aexpr   ::= nexpr | nexpr "-a" aexpr;
+nexpr   ::= primary | "!" primary;
+primary ::= unary-operator operand
+        | operand binary-operator operand
+        | operand
+        | "(" oexpr ")";
+unary-operator ::= "-r"|"-w"|"-x"|"-f"|"-d"|"-c"|"-b"|"-p"|
+                   "-u"|"-g"|"-k"|"-s"|"-t"|"-z"|"-n"|"-o"|
+                   "-O"|"-G"|"-L"|"-S";
+
+binary-operator ::= "="|"=="|"!="|"-eq"|"-ne"|"-ge"|"-gt"|"-le"|"-lt"|
+                    "-nt"|"-ot"|"-ef";
+
+operand ::= <any legal UNIX file name>
+
+where
+
+! expr: logical NOT
+expr1 -a expr2: logical AND; short-circuits
+expr1 -o expr2: logical OR; short-circuits
+-r fso: file system object is readable
+-w fso: file system object is writable
+-x fso: file system object is executable
+-f fso: file system object is a file
+-d fso: file system object is a directory
+-c fso: file system object is a character device
+-b fso: file system object is a block device
+-p fso: file system object is pipe
+-u fso: SUID bit is set in permissions of file system object fso
+-g fso: GUID bit is set in permissions of file system object fso
+-k fso: [non-POSIX extension] "sticky" bit is set in permissions of file system object fso
+-s fso: file system object fso exists and has a non-zero size
+-t fd: file descriptor fd belongs to a terminal device
+-z string: string is empty
+-n string: string is non-empty
+-O fso: [non-POSIX extension] file system object fso is owned by the effective user impersonated by the current process
+-G fso: [non-POSIX extension] file system object fso is owned by the effective group impersonated by the current process
+-L fso: file system object fso is a symbolic link
+-S fso: file system object fso is a socket
+string1 = string2: string1 is the same as string2
+string1 == string2: [non-POSIX extension] string1 is the same as string2
+string1 != string2: string1 is different than string2
+integer1 -eq integer2: integer1 is numerically the same as integer2
+integer1 -ne integer2: integer1 is numerically different than integer2
+integer1 -ge integer2: integer1 is numerically greater than or equal to integer2
+integer1 -gt integer2: integer1 is numerically greater than integer2
+integer1 -le integer2: integer1 is numerically less than or equal to integer2
+integer1 -lt integer2: integer1 is numerically less than integer2
+fso1 -nt fso2: [non-POSIX extension] file system object fso has newer mtime than fso2
+fso1 -ot fso2: [non-POSIX extension] file system object fso has older mtime than fso2
+fso1 -ef fso2: [non-POSIX extension] file system objects fso1 and fso2 refer to the same file (they have the same device and same inode numbers)

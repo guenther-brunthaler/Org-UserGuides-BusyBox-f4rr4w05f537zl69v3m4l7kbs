@@ -1,0 +1,16 @@
+login
+=====
+
+If the option LOGIN_SCRIPTS has been enabled in the BusyBox config, the login applet will run a script with root privileges right before becoming the user to log in.
+
+The name of the script will be read from the environment variable LOGIN_PRE_SUID_SCRIPT.
+
+If the variable does not exist, the script will not be called. Otherwise it should refer to an existing script. If the variable exists but is empty, the empty string will still be attempted to be called as a script; so better don't let it be an empty string.
+
+The following environment variables will be set up temporarily for the script:
+
+LOGIN_TTY: Path to the terminal device.
+LOGIN_USER: User's login name.
+LOGIN_UID: Numeric user ID.
+LOGIN_GID: Numeric ID of user's primary group.
+LOGIN_SHELL: The shell of the user from /etc/passwd.

@@ -1,0 +1,26 @@
+awk
+===
+
+The "awk" implementation is rather straightforward and dumb.
+
+For instance, strings are not assigned to variables using reference counts, and no attempt is made to hash identical string contents into a single shared reference-counted instance. Instead, strings are allocated and freed using malloc/free whenever they are updated.
+
+Similarly, variable scopes for user-defined functions are allocated with malloc/free instead of using the "C" stack for that.
+
+But at least numeric variable values are cached, instead of converting them on every access from/to their string representation.
+
+Arrays are implemented using hashing with multiple prime numbers taken from a constant array as moduli. That means every array indexing operation will incur an actual integer division, unless the compiler is super-smart and inlines the prime constants as they are taken from their array, transforming them into integer multiplications and possibly further into addition/subtraction/shifts. I doubt most C optimizers are that smart.
+
+BusyBox awk is therefore rather inefficient regarding processor cycles. However, it does not use Garbage Collection, and is therefore no memory hog either.
+
+As it uses malloc/free extensively, using an efficient C library implementation for those function is key to BusyBox awk's execution speed.
+
+The buddy-system based standard memory allocator of the GNU C library obviously does a pretty good job, because despite its deficiencies BusyBox awk is fast enough for serious work even on a Raspberry Pi Model 1.
+
+There are some constructs with GNU awk accepts but BusyBox awk doesn't:
+
+var = var (var == "" ? "" : " ") add
+
+is interpreted as a function call var(...) by BusyBox awk and may be re-written (among other possibilities) as
+
+var = (var) (var == "" ? "" : " ") add

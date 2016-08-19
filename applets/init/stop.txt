@@ -1,15 +1,14 @@
 The following steps assume BusyBox init has been configured to read its
 configuration from /run/inittab rather than from /etc/inittab.
 
-It further assumes the KILL_REMOVED BusyBox build option has been
-enabled.
+It will stop init and replace it with a PID 1 shell on tty8.
 
-In order to re-exec init:
+In order to stop init and replace it by a shell:
 
-$ cat inittab > /run/inittab
+$ cat inittab.stop > /run/inittab
 $ cp nterm /run/
-$ kill -HUP 1 # Reload inittab; spawn tty8
-$ kill -QUIT 1 # Will re-exec, only tty8 left after this.
+$ kill -HUP 1 # Reload inittab
+$ kill -QUIT 1 # Will exec /run/nterm.
 
 On tty8, go to THIS dir then launch up services.
 
@@ -18,6 +17,3 @@ any other running processes other than itself before restarting.
 
 This means any other shells running at the moment when init receives
 SIGQUIT will be killed as well.
-
-The only way how to make sure a shell will be available after
-re-exec'ing init is to start one from the new init's inittab.

@@ -1,0 +1,52 @@
+start-stop-daemon
+=================
+
+Usage: start-stop-daemon [OPTIONS] [-S|-K] ... [-- ARGS...]
+
+Search for matching processes, and then
+-K: stop all matching processes
+-S: start a process unless a matching process is found.
+
+Process matching:
+        -u,--user USERNAME|UID  Match only this user's processes
+        -n,--name NAME          Match processes with NAME
+                                in comm field in /proc/PID/stat
+        -x,--exec EXECUTABLE    Match processes with this command
+                                in /proc/PID/{exe,cmdline}
+        -p,--pidfile FILE       Match a process with PID from the file
+        All specified conditions must match
+-S only:
+        -x,--exec EXECUTABLE    Program to run
+        -a,--startas NAME       Zeroth argument
+        -b,--background         Background
+        -N,--nicelevel N        Change nice level
+        -c,--chuid USER[:[GRP]] Change to user/group
+        -m,--make-pidfile       Write PID to the pidfile specified by -p
+-K only:
+        -s,--signal SIG         Signal to send
+        -t,--test               Match only, exit with 0 if a process is found
+Other:
+        -o,--oknodo             Exit with status 0 if nothing is done
+        -v,--verbose            Verbose
+        -q,--quiet              Quiet
+
+Additional requirements:
+
+-K or -S is required; they are mutually exclusive.
+
+If -m is given, then -p is also required.
+
+If -K is given, then at least one of -x, -p, -u and -n is also required.
+
+If -S is given, then at least one of -x and -a is also required.
+
+-q turns off -v.
+
+Note that the executable needs to be specified with -x or -a, and not just precede ARGS as as normal argument.
+
+Example: Start and stop command "/usr/bin/sleep 999" silently as a service.
+
+$ busybox start-stop-daemon -p /tmp/sleep.pid -m -x /usr/bin/sleep -b -S -- 999
+$ busybox start-stop-daemon -p /tmp/sleep.pid -q -K && rm /tmp/sleep.pid
+
+Note that -S -m creates a PID file, but -K does not remove it.

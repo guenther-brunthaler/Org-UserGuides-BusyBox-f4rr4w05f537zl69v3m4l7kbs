@@ -1,0 +1,91 @@
+find [-HL] PATH ... [OPTIONS] [ACTIONS]
+
+Search for files and perform actions on them.
+First failed action stops processing of current file.
+Defaults: PATH is current directory, action is '-print'
+
+In the following, [NPX] means "non-portable non-POSIX extension provided by BusyBox".
+
+Options:
+
+-L,             Follow symlinks
+-follow         [NPX] Follow symlinks
+-H              Follow symlinks on command line only
+{only available if build feature FIND_XDEV has been enabled:}
+-xdev           Don't descend directories on other filesystems
+{only available if build feature FIND_MAXDEPTH has been enabled:}
+-maxdepth N     [NPX] Descend at most N levels. -maxdepth 0 applies
+                actions to command line arguments only
+-mindepth N     [NPX] Don't act on first N levels
+{only available if build feature FIND_DEPTH has been enabled:}
+-depth          Act on directory *after* traversing it
+
+Actions:
+
+ACT1 [-a] ACT2  If ACT1 fails, stop, else do ACT2
+ACT1 -o ACT2    If ACT1 succeeds, stop, else do ACT2
+                Note: -a has higher priority than -o
+-name PATTERN   Match file name (w/o directory name) to PATTERN
+-iname PATTERN  [NPX] Case insensitive -name
+{only available if build feature FIND_PAREN has been enabled:}
+( ACTIONS )     Group actions for -o / -a
+{only available if build feature FIND_NOT has been enabled:}
+! ACT           Invert ACT's success/failure
+{only available if build feature FIND_PATH has been enabled:}
+-path PATTERN   Match path to PATTERN
+-ipath PATTERN  [NPX] Case insensitive -path
+{only available if build feature FIND_REGEX has been enabled:}
+-regex PATTERN  [NPX] Match path to regex PATTERN
+{only available if build feature FIND_TYPE has been enabled:}
+-type X         File type is X (one of: f,d,l,b,c,...)
+{only available if build feature FIND_PERM has been enabled:}
+-perm MASK      At least one mask bit (+MASK), all bits (-MASK),
+                or exactly MASK bits are set in file's mode
+{only available if build feature FIND_MTIME has been enabled:}
+-mtime DAYS     mtime is greater than (+N), less than (-N),
+                or exactly N days in the past
+{only available if build feature FIND_MMIN has been enabled:}
+-mmin MINS      [NPX] mtime is greater than (+N), less than (-N),
+                or exactly N minutes in the past
+{only available if build feature FIND_NEWER has been enabled:}
+-newer FILE     mtime is more recent than FILE's
+{only available if build feature FIND_INUM has been enabled:}
+-inum N         [NPX] File has inode number N
+{only available if build feature FIND_USER has been enabled:}
+-user NAME/ID   File is owned by given user
+{only available if build feature FIND_GROUP has been enabled:}
+-group NAME/ID  File is owned by given group
+{only available if build feature FIND_SIZE has been enabled:}
+-size N[bck]    File size is N (c: bytes, k: [NPX] kbytes,
+                b: 512 bytes (default))
+                +/-N: file size is bigger/smaller than N
+{only available if build feature FIND_LINKS has been enabled:}
+-links N        Number of links is greater than (+N), less than (-N),
+                or exactly N
+{only available if build feature FIND_CONTEXT has been enabled:}
+-context CTX    [NPX] File has specified security context
+{only available if build feature FIND_PRUNE has been enabled:}
+-prune          If current file is directory, don't descend into it
+
+If none of the following actions is specified, -print is assumed:
+
+-print          Print file name
+{only available if build feature FIND_PRINT0 has been enabled:}
+-print0         [NPX] Print file name, NUL terminated
+{only available if build feature FIND_EXEC has been enabled:}
+-exec CMD ARG ; Run CMD with all instances of {} replaced by
+                file name. Fails if CMD exits with nonzero
+{only available if build feature FIND_EXEC_PLUS has been enabled:}
+-exec CMD ARG + Run CMD with {} replaced by list of file names
+{only available if build feature FIND_DELETE has been enabled:}
+-delete         [NPX] Delete current file/directory. Turns on -depth option
+
+BusyBox "find" DOES NOT implement the following actions required by POSIX.1-2008:
+
+-atime DAYS     [MISSING] atime is greater than (+N), less than (-N),
+                or exactly N days in the past
+-ctime DAYS     [MISSING] ctime is greater than (+N), less than (-N),
+                or exactly N days in the past
+-nouser         [MISSING] file belongs to a user ID for which the getpwuid() function returns NULL
+-nogroup        [MISSING] file belongs to a user ID for which the getgrgid() function returns NULL
+-ok CMD ARG ;   [MISSING] Like -exec but without support for the "+" sign, and the user is prompted to agree before every execution of CMD.
