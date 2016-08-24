@@ -1,34 +1,101 @@
 #! /bin/sh
+if test true != "$INIT_D_SCRIPT_SOURCED"
+then
+	set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+fi
+### BEGIN INIT INFO
+# Provides:          inetd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Socket-activation superserver
+# Description:       This service listens on network sockets and launches
+#                    server executables when connection attempts to those
+#                    sockets are made. The servers are started with their
+#                    standard input and standard output connected to ths
+#                    socket.
+### END INIT INFO
 
-pidfile="/var/run/inetd.pid"
+# Author: Guenther Brunthaler
+#
+# Copyright (c) 2016 Guenther Brunthaler. All rights reserved.
+# 
+# This script is free software.
+# Distribution is permitted under the terms of the GPLv3.
+
+# Defaults. Can be overriden/updated via /etc/default.
+DESC="Internet daemon"
+DAEMON=/usr/local/bin/inetd
+# The configuration file to be used by BusyBox' initd. Actually, this file
+# is not the real one which will be used, but will rather be preprocessed
+# in order to expand a certain macro before the resulting script is used as
+# the real configuration file. The macro which is expanded (if present) is
+#
+# INTERFACES_EXCEPT($interface_ignore_list)
+#
+# where $interface_list is a space-separated list of interface names. The
+# macro then expands to the list of existing interfaces *except* those in
+# $interface_ignore_list.
+#
+# This macro can be used to let services bind to all internal interfaces,
+# except interfaces known to be accessible from the Internet also if this is
+# deemed to be too dangerous because of possible misuse.
+#
+# For instance, services like "dictd" might be useful to be available to other
+# computers within the same local network, but one does not want it to be
+# accessible from the Internet because of possible misuse by reflection DDoS
+# attacks.
 conffile=/etc/inetd.conf
+# This is the name of the real configuration file which will be the result of
+# expanding any macros in $conffile. The file itself will be created, but its
+# parent directory must already exist.
 realconf=/var/run/inetd.conf
+# This is the temporary name when $realconf is updated as a consequence of
+# reloading the service configuration. It will be renamed to $realconf once
+# macro expansion is complete. This avoids the situation that inetd might see
+# a partially created configuration file if it should choose to reload its
+# configuration while the latter is currently being updated.
 newconf=$realconf.new
+# This is not used currently. But it should be set to the absolute path of the
+# file where the running BusyBox inetd applet daemon will store its PID, in
+# case a later update of this script needs to send a signal to the inetd
+# process.
+DAEMON_ARGS="-R 20 $realconf"
 
 # Print lines "$interface_name:$ip_address".
 enum_ifc() {
-	local PATH=/sbin:/usr/sbin:$PATH
-	LC_ALL=C ifconfig | {
-		p1='[^[:space:]]\+'
-		p2=':'
-		p3='[[:space:]].*[[:space:]]\+inet[[:space:]]\+'
-		p4='[^[:space:]]\+'
-		while IFS= read -r line
-		do
-			if
-				match=`expr x"$line" : x"\($p1\)$p2" || :`
-				test -n "$match"
-			then
-				ifc=$match
-			elif
-				match=`expr x"$line" : x"$p3\($p4\)" || :`
-				test -n "$match"
-			then
-				ip=$match
-				printf '%s\n' "$ifc:$ip"
-			fi
-		done
-	}
+	(
+		export PATH="/sbin:/usr/sbin:$PATH"
+		LC_ALL=C ifconfig | {
+			p1='[^[:space:]]\{1,\}'
+			p2='[:[:space:]]'
+			p3='[[:space:]].*[[:space:]]inet[[:space:]]'
+			p3=$p3'[^0-9.]*'
+			p4='[0-9]\{1,3\}\([.][0-9]\{1,3\}\)\{3\}'
+			while IFS= read -r line
+			do
+				if
+					match=`
+						expr x"$line" : x"\($p1\)$p2" \
+						|| :
+					`
+					test -n "$match"
+				then
+					ifc=$match
+				elif
+					match=`
+						expr x"$line" : x"$p3\($p4\)" \
+						|| :
+					`
+					test -n "$match"
+				then
+					ip=$match
+					printf '%s\n' "$ifc:$ip"
+				fi
+			done
+		}
+	)
 }
 
 # Print all $ip_address from enum_ifc() not matching "case"-condition $1, or
@@ -52,8 +119,8 @@ exclude_ifc() {
 
 # Preprocess $conffile into $realconf.
 preprocess() {
-	# $INTERFACES_EXCEPT(<GLOB> ... <GLOB>):
 	local line pfx match sfx p1 p2 p3 p4 p5
+	# $INTERFACES_EXCEPT(<GLOB> ... <GLOB>):
 	p1='[[:space:]]*[$]'
 	p2='INTERFACES_EXCEPT('
 	p3='[^)]*'
@@ -81,21 +148,22 @@ preprocess() {
 	mv -- "$newconf" "$realconf"
 }
 
+# Portable test $1 -nt $2
+is_newer_than() {
+	test 1 = "`find -L "$1" -newer "$2" | wc -l`"
+}
+
 refresh() {
-	is_newer_than "$conffile" "$realconf" && preprocess
+	if test ! -f "$realconf" || is_newer_than "$conffile" "$realconf"
+	then
+		preprocess
+	fi
 }
 
-start_pre() {
+do_start_prepare() {
 	refresh
 }
 
-reload_pre() {
-	refresh
-}
-
-stop_post() {
+do_stop_cleanup() {
 	rm -- "$realconf"
 }
-
-# TO DO: Actually start and stop the service, and invoke the above
-# functions.
