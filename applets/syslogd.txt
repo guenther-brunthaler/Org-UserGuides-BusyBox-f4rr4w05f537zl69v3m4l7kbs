@@ -1,0 +1,37 @@
+When the cirular buffer feature of BusyBox syslogd is used, two global SYSV IPC structures will be used:
+
+* A shared memory segment identified with key "GENA" (ASCII dump in little-endian encoding).
+
+* A semaphore set of two semaphores, also identified with key "GENA".
+
+The first semaphore in the set is for writers, the second one for readers.
+
+The shared memory segment survives when syslogd is killed, but will be overwritten with zeroes once the next BB syslog instance starts.
+
+The buffer consists of two 32 bit integers followed by message character data:
+
+* The useable data size of the buffer (excluding last byte which always remains a null terminator).
+
+* The offset into the payload area where the next message will be written.
+
+All messages in the buffer are null-terminated string, circularly wrapping at the buffer's end. Yet-unused parts of the buffer are zero filled from the time of initialization.
+
+When dumping all messages, BB logread assumes the space between where the next message will be written and the next null-terminator found after it (wrapping again if required) is a partially overwritten message and will not emit it.
+
+Instead, it starts with the first message after that null terminator, and continues until it stops at the position where the next message will be written.
+
+Consequences of BB' circular buffer structure:
+
+* It is highly efficient, avoiding any effort for "memory compaction" or moving around partial strings once the buffer becomes full.
+
+* Very low space overhead: 8/16 bytes buffer header information for 32/64 bit kernels, plus one single byte overhead per log message. (Its null terminator).
+
+* There is no length restiction for log messages (other than, naturally, the size of the buffer minus the buffer header).
+
+* Log messages can contain any byte value other than zero. This should not be a problem, because there is no way to pass zero bytes anyway (syslog expects null-terminated strings which cannot contain zero bytes).
+
+* Log messages are written as alread-formatted text strings into the buffer by syslogd. The formatting takes place at the time syslogd receives the log message.
+
+* There is no hidden metadata (such as encoded priority/facility-codes) in the buffer. All metadata must have been converted into text by syslogd at the time it added the message to the buffer.
+
+As a side note, the -f option of logread does not invoke some clever way to wake it up automatically when a new message arrives in the buffer. It just wakes up every second and checks again.

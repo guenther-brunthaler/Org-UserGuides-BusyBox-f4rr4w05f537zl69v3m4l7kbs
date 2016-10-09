@@ -1,0 +1,12 @@
+SIGHUP makes BusyBox inetd reload its configuration file.
+
+SIGTERM and SIGINT instruct BusyBox inetd to shut itself down ASAP.
+
+As of 2016-09, BusyBox inetd performs I/O operations within signal handlers,
+which can lead to problems and is not allowed by POSIX.
+
+Better use the real BSD inetd if you can and code size does not matter that
+much.
+
+However, BB inetd worked for me all the time in practice. OTOH, I didn' run it
+on a heavily loaded server system.
