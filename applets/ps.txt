@@ -1,0 +1,38 @@
+ps - Show list of processes
+
+Options:
+
+-o COL1,COL2=HEADER   Select columns for display
+
+[Additionally available if CONFIG_SHOW_THREADS has been enabled]
+-T   Show threads"
+
+Built-in help: Specifying any invalid column name for -o displays all
+available column names. E. g. "-o help" or "-o h".
+
+Column names available for -o (with displayed header in second column):
+
+user USER: User name
+group GROUP: Group name
+comm COMMAND: Command w/o arguments
+args COMMAND: Command w/ arguments
+pid PID: Process ID
+ppid PPID: Parent process ID
+pgid PGID: Process group session leader's process ID
+tty TT: Terminal device connected to process
+vsz VSZ: Size of process' virtual memory
+stat STAT: Process' run status
+rss RSS: Resident set size (RAM currently allocated to process)
+
+[Additionally available if CONFIG_PS_TIME has been enabled]
+etime ELAPSED
+time TIME
+
+[Additionally available if CONFIG_PS_ADDITIONAL_COLUMNS has been enabled]
+nice NI
+rgroup RGROUP
+ruser RUSER
+pcpu %CPU
+
+[Additionally available if CONFIG_SELINUX has been enabled]
+label LABEL: SELINUX security context
