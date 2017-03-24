@@ -1,0 +1,90 @@
+ed
+==
+
+The "ed" applet supports some the commands defined by POSIX.
+
+However, it does not support any of the command line options defined by POSIX and always behaves as if invoked with the single option
+
+-----
+-p": "
+-----
+
+That is. ": " is used as a prompt string in command entry mode.
+
+On the plus side, full command-line editing is available, which is not the case with GNU ed.
+
+Another important difference is that BusyBox "ed" fails when specifying a non-existing filename as its argument.
+
+GNU ed displays a warning in this case, but starts anyway with an empty buffer, writing the non-existing file once a "w" command without parameters is issued.
+
+So don't use "ed" on a non-existant file, or the behaviour will not be portable.
+
+
+Available commands
+------------------
+
+Here is a list of commands required by POSIX, and whether BusyBox "ed" actually implements them:
+
+* "a" - add text until "." line after current line
+
+* "c" - delete line then replace with new text like for "a"
+
+* "d" - delete current line
+
+* "e" - [NOT IMPLEMENTED] discard buffer and read file with specified pathname
+
+* "E" - [NOT IMPLEMENTED] like "e" but don't complain about unsaved changes
+
+* "f" - set the pathname of the current file
+
+* "g" - [NOT IMPLEMENTED] apply the same commands to all lines matching a regex
+
+* "G" - [NOT IMPLEMENTED] like "g" but interactively ask for each line whether the commands shall be executed
+
+* "h" - [NOT IMPLEMENTED] display help for last error just displayed as "?"
+
+* "H" - [NOT IMPLEMENTED] toggle a mode where "h" is permanently in effect
+
+* "i" - insert text until "." before current line
+
+* "j" - [NOT IMPLEMENTED] join this line with the following one, making them one line
+
+* "k" - mark the current line with a lower-case letter given as argument
+
+* "l" - display contents of current line the all control characters visualized
+
+* "m" - [NOT IMPLEMENTED] move current line after line specified as argument
+
+* "n" - [NOT IMPLEMENTED] display contents of current line prefixed with its line number
+
+* "p" - just display contents of current line
+
+* "P" - [NOT IMPLEMENTED] toggle or set command prompt
+
+* "q" - quit "ed" but complain if there are unsaved changes
+
+* "Q" - [NOT IMPLEMENTED] like "q" but without complaining about unsaved changes
+
+* "r" - insert contents of file (pathname as argument) after current line
+
+* "s" - regex-based text substitution in current line
+
+* "t" - [NOT IMPLEMENTED] copy current line after the line specified as argument
+
+* "u" - [NOT IMPLEMENTED] undo last command (even "g") in most cases (e. g. not for "w")
+
+* "v" - [NOT IMPLEMENTED] like "g" but for non-matching lines
+
+* "V" - [NOT IMPLEMENTED] interactive version of "v"
+
+* "w" - write text in memory to file specified as argument or to to currently remembered pathname
+
+* "z" - [NON-POSIX EXTENSION] go either 20 lines forth or back, or display 10 lines around the current line - does not always work
+
+* "=" - display current line number
+
+* "!" - execute a shell command specified as argument
+
+* (null command) - advance to the next line and display its contents
+
+The above commands can be enhanced by prefixing them with an address or address range, making them operate on the selected lines rather than just on the current line. See "man 1p sed" for more details.
