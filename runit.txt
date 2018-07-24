@@ -1,0 +1,52 @@
+runit
+=====
+
+BusyBox contains a minimalistic implementation of the "runit" service management suite.
+
+It is more flexible than "init" and can also be run by non-privileged users for managing their personal background services.
+
+The following BusyBox utilities are part of BusyBox' mimimalistic "runit" suite and are explained in details in their own documents:
+
+* runsvdir - the top-level service set supervisor. Spawns "runsv"-daemons for every subdirectory of its services directory, and respawns such daemons which have terminated. It also kills "runsv"-daemons which have no longer a service subdirectory. The default services directory is /etc/services, but an arbitrary directory may be specified instead. Up to 1000 service subdirectories can be supervised by an instance of runsvcdir.
+
+* runsv - the service supervisor. Should normally never die, but will be restarted by "runsvdir" if it does. Supervises a single service. Monitors its intended state (controlled via "sv"), and spawns or kills a service process accordingly.  The service state and configuration files are normally placed in the "supervise"-subdirectory/symlink of the service directory for a particular "runsv"-supervisor. "runsv" is not normally started explicitly, but will be spawned by some running "runsvdir" instance.
+
+* sv - control the operation of "runsv" for a particular service. Basically it can tell the associated "runsv" to start or stop an associated "worker" service-process which implements the actual service ("runsv" itself is just a supervisor), or it can query the current state (running/stopped). By default, "sv" assumes /etc/services to be the services directory, but the environment variable $SVDIR can be used to override this.
+
+* svc - an alternative to "sv". Does basically the same with a different command line syntax.
+
+* svlogd - stdout-capturing logger. "runsv"-controlled services frequently do not log to syslog nor to particular log files, and neither do they daemonize as background processes. Instead, they just run their service in the foreground and write their log messages to standard output. "svlogd" collects such output and can write them to per-service rotated log-files. Alternatively, log messages can (unreliably) be sent via UDP. The "svlogd"-files are normally placed in a "log"-subdirectory/symlink of the service directory for a particular "runsv"-supervisor. "svlogd" is not normally started explicitly, but will rather be spawned automatically by "runsv" if it detects a "log" subdirectory in its associated service directory. If logging is not wanted for some service, just redirect its output to /dev/null and don't use "svlogd" at all.
+
+* chpst - service resource setup helper. This program can set resource limits, niceness, environment variables, change user or group IDs for the process, chroot it, optionally close standard file decriptors or start a new process group. It thus provides some of the features of start-stop-daemon for "runit"-services, except that it does not background the program to be run. A runit service worker is usually a script that sets everything up for running some real service executable, and finally "exec"s it with "chpst" if necessary. Non-privleged users obviously cannot use some of the features of "chpst".
+
+In BB runit operation, each service normally consists of 2 or 3 processes:
+
+* a "runsv" supervisor
+* a "svlogd" logger
+* a service worker script that sets up the service environment and finally exec's some service binary with "chpst".
+
+The configuration for "runsvc" and "svlogd" is kept as files in a service directory.
+
+All service directories of the same service set are children (or symlinks to) a parent directory which is supervised by a single "runsvcdir" top-level supervisor process for that service set.
+
+There may be many service sets be active at the same time, controlled by independent instances of "runsvcdir".
+
+Service dependencies are not handled by "runit" and its supervisor processes, but rather by the service worker scripts themselves. The should check whether all available dependent services are already running, and terminate otherwise. Optionally, they can use "sv" to start the missing dependent service before terminating.
+
+The "runsv"-supervisor associated with the service worker script will eventually re-start the worker script after a couple of seconds, and then it can check for the availibility of its required resources again before finally exec'ing the actual service executable (typically with chpst).
+
+The service-directory for a "runit"-supervised process is the working process where its "runsv"-instance has been started. Those service directories are normally subdirectories (or symlinks to directories) of the services directory managage by a "runsvdir" instance.
+
+"runsv" assumes a particular directory layout for its working (the "service") directory:
+
+./supervise/* - service statte such as PID files, managed by "runsv" itself and also by "sv".
+
+./run - This is the only mandatory script/executable. It represents the service worker process. It it terminated prematurely, its associated "runsv" supervisor will restart it after a short delay.
+
+./finish - An optional script called after "sv down" has terminated the service worker. Gets the exit/waitpid return values of ./run as arguments for evaluation. This script typcally does cleanup, such as stopping helper services no longer needed.
+
+./log/* - It this subdirectory is present, an associated logging process is automatically managed for the service worker. In fact, this subdirectory is just the base directory for another supervised service. Is has is own ./log/supervise/* subdirectory, "./log/run"-script etc. Normally, this is used to start a "svlogd"-worker process. "runsv" automatically routes the output of the "./run"-script as the input for the "./log/run"-script.
+
+Virtually every file or directory described above can also be a symlink. This allows, for instance, relocating non-static files to /var/run, /tmp, /var/log or similar, so that the actual services directory and its subdirectories may be located on a read-only filesystem.
+
+Symlinks can also be used to simulate "run levels", by making "/etc/service" a symlink to the actual runlevel service directory to be used. For instance. /etc may be on a read-only filesystem, /etc/services may be a symlink somewhere into /var/run, and there may be a (writable) symlink back to one of multiple alternative runlevel services-directories in the readonly /etc.
