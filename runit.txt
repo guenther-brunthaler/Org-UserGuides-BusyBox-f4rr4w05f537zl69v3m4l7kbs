@@ -50,3 +50,142 @@ The service-directory for a "runit"-supervised process is the working process wh
 Virtually every file or directory described above can also be a symlink. This allows, for instance, relocating non-static files to /var/run, /tmp, /var/log or similar, so that the actual services directory and its subdirectories may be located on a read-only filesystem.
 
 Symlinks can also be used to simulate "run levels", by making "/etc/service" a symlink to the actual runlevel service directory to be used. For instance. /etc may be on a read-only filesystem, /etc/services may be a symlink somewhere into /var/run, and there may be a (writable) symlink back to one of multiple alternative runlevel services-directories in the readonly /etc.
+
+
+The "sv" command
+----------------
+
+This is the usage of the BusyBox "sv"-implementation:
+
+Usage: sv [-v] [-w SEC] CMD SERVICE_DIR...
+
+Control services monitored by runsv supervisor.
+Commands (only first character is enough):
+
+status: query service status
+up: if service isn't running, start it. If service stops, restart it
+once: like 'up', but if service stops, don't restart it
+down: send TERM and CONT signals. If ./run exits, start ./finish if it exists. After it stops, don't restart service
+exit: send TERM and CONT signals to service and log service. If they exit, runsv exits too
+pause, cont, hup, alarm, interrupt, quit, 1, 2, term, kill: send STOP, CONT, HUP, ALRM, INT, QUIT, USR1, USR2, TERM, KILL signal to service
+
+
+In more detail
+~~~~~~~~~~~~~~
+
+* status
+
+Report the current status of the service, and the appendant log service if available, to standard output.
+
+* up
+
+If the service is not running, start it. If the service stops, restart it.
+
+* down
+
+If the service is running, send it the TERM signal, and the CONT signal. If ./run exits, start ./finish if it exists. After it stops, do not restart service.
+
+* once
+
+If the service is not running, start it. Do not restart it if it stops.
+
+* pause
+* cont
+* hup
+* alarm
+* interrupt
+* quit
+* 1
+* 2
+* term
+* kill
+
+If the service is running, send it the STOP, CONT, HUP, ALRM, INT, QUIT, USR1, USR2, TERM, or KILL signal respectively.
+
+* exit
+
+If the service is running, send it the TERM signal, and the CONT signal. Do not restart the service. If the service is down, and no log service exists, runsv(8) exits. If the service is down and a log service exists, send the TERM signal to the log service. If the log service is down, runsv(8) exits. This command is ignored if it is given to an appendant log service.
+
+sv actually looks only at the first character of above commands.
+
+
+Comparison with LSB-subcommands
+-------------------------------
+
+Commands compatible to LSB init script actions (not directly supported by BusyBox sv, but rather how they could be emulated / differ from the sv subcommands):
+
+* status
+
+Same as status.
+
+* start
+
+Same as up, but wait up to 7 seconds for the command to take effect. Then report the status or timeout. If the script ./check exists in the service directory, sv runs this script to check whether the service is up and available; it's considered to be available if ./check exits with 0.
+
+* stop
+
+Same as down, but wait up to 7 seconds for the service to become down. Then report the status or timeout.
+
+* restart
+
+Send the commands term, cont, and up to the service, and wait up to 7 seconds for the service to restart. Then report the status or timeout. If the script ./check exists in the service directory, sv runs this script to check whether the service is up and available again; it's considered to be available if ./check exits with 0.
+
+* shutdown
+
+Same as exit, but wait up to 7 seconds for the runsv(8) process to terminate. Then report the status or timeout.
+
+* force-stop
+
+Same as down, but wait up to 7 seconds for the service to become down. Then report the status, and on timeout send the service the kill command.
+
+* force-reload
+
+Send the service the term and cont commands, and wait up to 7 seconds for the service to restart. Then report the status, and on timeout send the service the kill command.
+
+* force-restart
+
+Send the service the term, cont and up commands, and wait up to 7 seconds for the service to restart. Then report the status, and on timeout send the service the kill command. If the script ./check exists in the service directory, sv runs this script to check whether the service is up and available again; it's considered to be available if ./check exits with 0.
+
+* force-shutdown
+
+Same as exit, but wait up to 7 seconds for the runsv(8) process to terminate. Then report the status, and on timeout send the service the kill command.
+
+Additional Commands
+~~~~~~~~~~~~~~~~~~~
+
+* check
+
+Check for the service to be in the state that's been requested. Wait up to 7 seconds for the service to reach the requested state, then report the status or timeout. If the requested state of the service is up, and the script ./check exists in the service directory, sv runs this script to check whether the service is up and running; it's considered to be up if ./check exits with 0.
+
+
+Options
+~~~~~~~
+
+* -v
+
+wait up to 7 seconds for the command to take effect. Then report the status or timeout.
+
+* -w sec
+
+Override the default timeout of 7 seconds with sec seconds. Implies -v.
+
+
+Environment
+~~~~~~~~~~~
+
+* SVDIR
+
+The environment variable $SVDIR overrides the default services directory /var/service.
+
+* SVWAIT
+
+The environment variable $SVWAIT overrides the default 7 seconds to wait for a command to take effect. It is overridden by the -w option.
+
+
+Exit Codes
+~~~~~~~~~~
+
+sv exits 0, if the command was successfully sent to all services, and, if it was told to wait, the command has taken effect to all services.
+
+For each service that caused an error (e.g. the directory is not controlled by a runsv(8) process, or sv timed out while waiting), sv increases the exit code by one and exits non zero. The maximum is 99. sv exits 100 on error.
+
