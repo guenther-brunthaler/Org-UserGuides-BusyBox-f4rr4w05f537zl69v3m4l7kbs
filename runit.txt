@@ -33,19 +33,19 @@ There may be many service sets be active at the same time, controlled by indepen
 
 Service dependencies are not handled by "runit" and its supervisor processes, but rather by the service worker scripts themselves. The should check whether all available dependent services are already running, and terminate otherwise. Optionally, they can use "sv" to start the missing dependent service before terminating.
 
-The "runsv"-supervisor associated with the service worker script will eventually re-start the worker script after a couple of seconds, and then it can check for the availibility of its required resources again before finally exec'ing the actual service executable (typically with chpst).
+The "runsv"-supervisor associated with the service worker script will eventually re-start the worker script after a couple of seconds, and then it can check for the availability of its required resources again before finally exec'ing the actual service executable (typically with chpst).
 
-The service-directory for a "runit"-supervised process is the working process where its "runsv"-instance has been started. Those service directories are normally subdirectories (or symlinks to directories) of the services directory managage by a "runsvdir" instance.
+The service-directory for a "runit"-supervised process is the working process where its "runsv"-instance has been started. Those service directories are normally subdirectories (or symlinks to directories) of the services directory managed by a "runsvdir" instance.
 
 "runsv" assumes a particular directory layout for its working (the "service") directory:
 
-./supervise/* - service statte such as PID files, managed by "runsv" itself and also by "sv".
+./supervise/* - service state such as PID files, managed by "runsv" itself and also by "sv".
 
-./run - This is the only mandatory script/executable. It represents the service worker process. It it terminated prematurely, its associated "runsv" supervisor will restart it after a short delay.
+./run - This is the only mandatory script/executable. It represents the service worker process. It it terminates prematurely, its associated "runsv" supervisor will restart it after a short delay.
 
 ./finish - An optional script called after "sv down" has terminated the service worker. Gets the exit/waitpid return values of ./run as arguments for evaluation. This script typcally does cleanup, such as stopping helper services no longer needed.
 
-./log/* - It this subdirectory is present, an associated logging process is automatically managed for the service worker. In fact, this subdirectory is just the base directory for another supervised service. Is has is own ./log/supervise/* subdirectory, "./log/run"-script etc. Normally, this is used to start a "svlogd"-worker process. "runsv" automatically routes the output of the "./run"-script as the input for the "./log/run"-script.
+./log/* - If this subdirectory is present, an associated logging process is automatically managed for the service worker. In fact, this subdirectory is just the base directory for another supervised service. Is has is own ./log/supervise/* subdirectory, "./log/run"-script etc. Normally, this is used to start a "svlogd"-worker process. "runsv" automatically routes the output of the "./run"-script as the input for the "./log/run"-script.
 
 Virtually every file or directory described above can also be a symlink. This allows, for instance, relocating non-static files to /var/run, /tmp, /var/log or similar, so that the actual services directory and its subdirectories may be located on a read-only filesystem.
 
