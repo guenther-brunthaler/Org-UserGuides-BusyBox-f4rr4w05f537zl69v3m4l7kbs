@@ -7,7 +7,9 @@ It is usually used to provide logging to services managed by BusyBox "runit"-sui
 
 It has only one mandatory argument, which is the directory where to place the log files.
 
+----
 Usage: svlogd [-ttv] [-r C] [-R CHARS] [-l MATCHLEN] [-b BUFLEN] DIR...
+----
 
 This optionally reads a configuration file from DIR/config, and then continuosly reads lines from standard input considering them to be log messages.
 
@@ -55,4 +57,4 @@ The names of the rotated logs are also strange. They are obviously named after t
 
 One advantage of this strange naming convention is that the log files never need to be renamed, which would be the case if normally numbered files had been used instead.
 
-On the other hand, this scheme will create problems if the system clock changes an no monotonically increasing time source is available (which svlogd tries to use for naming its log files).
+On the other hand, this scheme will create problems if the system clock changes and no monotonically increasing time source is available (which 'svlogd' tries to use for naming its log files).
