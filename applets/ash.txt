@@ -49,6 +49,8 @@ Escape sequences supported in $PS1:
 \T   same as \t
 \@   same as \t
 
+Also, command substitution with backquotes is supported in $PS1.
+
 The read builtin supports the following options:
 
 -r              Do not interpret '\' specially

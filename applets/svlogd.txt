@@ -1,0 +1,60 @@
+svlogd
+======
+
+This is a logger which captures standard input and writes it to an (optionally rotated) log file.
+
+It is usually used to provide logging to services managed by BusyBox "runit"-suite, particularly in combination with "runsv". But it can also be used alone.
+
+It has only one mandatory argument, which is the directory where to place the log files.
+
+----
+Usage: svlogd [-ttv] [-r C] [-R CHARS] [-l MATCHLEN] [-b BUFLEN] DIR...
+----
+
+This optionally reads a configuration file from DIR/config, and then continuosly reads lines from standard input considering them to be log messages.
+
+The messages are then appendet to DIR/current and may optionally be preceded by a medium-resolution (but still much higher than seconds) UTC time stamp.
+
+-v: writes messages regarding the logger itself to standard error. This are messages about starting/stopping the logging process, and about logfile rotation. Normally not useful unless these messages are forwarded to another logger.
+
+-t: adds hexadecimal high-precision timestamps to the beginning of every logged line.
+
+-tt: adds human-readable timestamps (as UTC) with 1/100th milliseconds (that is, 10 microseconds) temporal resolution instead.
+
+-R CHARS: specifies a list of characters which shall be replaced in log messages by some (but the same) replacement character.
+
+-r CHAR: A single replacement character for all characters replaced by -R. If unspecified, defaults to an underscore ("_") character.
+
+-l MATCHLEN: The maximum length starting at the beginning of a log entry considered for inclusion/exclusion pattern matching in the config file.
+
+-b BUFLEN: It is unclear for what this is actually used.
+
+Further configuration is possible by creating a text file DIR/config. It supports the following types of entries (one per line):
+
+sSIZE - when to rotate logs. Default is 1 megabyte (*not* mebibyte). Should be at least 2 * BUFLEN.
+
+tSECS - maximum age of the current log file before it is being rotated irrespective of its current size.
+
+nNUM - number of files to retain. 10 is the default. 0 means infinite.
+
+Nnum - this is the number of newest rotated log files which will not be deleted even if there is too little space to create space new log files. Normally, the oldest rotated log file will be deleted until there is enough space to create the next log file in such a situation.
+
+uIPV4:PORT, uIPV4: CURRENTLY UNSUPPORTED. Send the first BUFLEN (see -b) characters of every log messages to UDP port PORT (default 514), and only log them normally if there was an error with sending. Note that sending via UDP is unreliable and messages loss due to transmission errors or congestion will normally not be detected.
+
+Uipv4:PORT, Uipv4: CURRENTLY UNSUPPORTED. Same as "u", but never try to log normally. Useful if there is no writable filesystem available at all.
+
+pPREFIX: CURRENTLY UNSUPPORTED. Prefix every generated log line with text PREFIX.
+
+!PROG - process rotated log with PROG
+
++,-PATTERN - (de)select line for logging
+
+E,ePATTERN - (de)select line for stderr
+
+Log rotation seems a bit strange to me. It brutally truncates the size of DIR/current to the exact byte size specified with "s" in DIR/config, which will lose the rest of the last line logged during that event. The truncated DIR/current will then be renamed according to the log rotation pattern.
+
+The names of the rotated logs are also strange. They are obviously named after the same hexadecimal high resolution timestamp which would also be included within the log entries when option "-t" has been enabled.
+
+One advantage of this strange naming convention is that the log files never need to be renamed, which would be the case if normally numbered files had been used instead.
+
+On the other hand, this scheme will create problems if the system clock changes and no monotonically increasing time source is available (which 'svlogd' tries to use for naming its log files).

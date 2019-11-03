@@ -1,10 +1,9 @@
 dnsd
 ====
 
-BusyBox dnsd is an authoritative DNS server for isolated networks which cannot forward queries it cannot answer to other DNS servers.
+BusyBox dnsd is an authoritative IPv4 DNS server for isolated networks which cannot forward queries it cannot answer to other DNS servers.
 
-Its configuration file, normally "/etc/dnsd.conf", contains simple
-space-separated $NAME $IP_ADDRESS pairs per line.
+Its configuration file, normally "/etc/dnsd.conf", contains simple space-separated $NAME $IPv4_ADDRESS pairs separated by sequences of spaces, tabs, or newlines. Empty lines will thus be ignored. A "#" starts a comment that extends to the end of the line and is handled as if it were whitespace.
 
 Multiple names can be used for the same IP-address, allowing alias names to be defined.
 

@@ -1,0 +1,198 @@
+runit
+=====
+v2019.271
+
+BusyBox contains a minimalistic implementation of the 'runit' service management suite.
+
+It is more flexible than 'init' and can also be run by non-privileged users for managing their personal background services.
+
+The following BusyBox utilities are part of BusyBox' mimimalistic 'runit' suite and are explained in details in their own documents:
+
+runsvdir:: The top-level service set supervisor. Spawns 'runsv'-daemons for every subdirectory of its services directory, and respawns such daemons which have terminated. It also kills 'runsv'-daemons which have no longer a service subdirectory. The default services directory is '/var/service', but an arbitrary directory may be specified instead. Up to 1000 service subdirectories can be supervised by an instance of 'runsvcdir'.
+
+runsv:: The service supervisor. Should normally never die, but will be restarted by 'runsvdir' if it does. Supervises a single service. Monitors its intended state (controlled via 'sv'), and spawns or kills a service process accordingly.  The service state and configuration files are normally placed in the 'supervise'-subdirectory/symlink of the service directory for a particular 'runsv'-supervisor. 'runsv' is not normally started explicitly, but will be spawned by some running 'runsvdir' instance.
+
+sv:: Control the operation of 'runsv' for a particular service. Basically it can tell the associated 'runsv' to start or stop an associated 'worker' service-process which implements the actual service ('runsv' itself is just a supervisor), or it can query the current state (running/stopped). By default, 'sv' assumes '/var/service' to be the services directory, but the environment variable '$SVDIR' can be used to override this.
+
+svc:: An alternative to 'sv'. Does basically the same with a different command line syntax.
+
+svlogd:: 'stdout'-capturing logger. 'runsv'-controlled services frequently do not log to 'syslog' nor to particular log files, and neither do they daemonize as background processes. Instead, they just run their service in the foreground and write their log messages to standard output. 'svlogd' collects such output and can write them to per-service rotated log-files. Alternatively, log messages can (unreliably) be sent via UDP. The 'svlogd'-files are normally placed in a 'log'-subdirectory/symlink of the service directory for a particular 'runsv'-supervisor. 'svlogd' is not normally started explicitly, but will rather be spawned automatically by 'runsv' if it detects a 'log' subdirectory in its associated service directory. If logging is not wanted for some service, just redirect its output to '/dev/null' and don't use 'svlogd' at all.
+
+chpst:: service resource setup helper. This program can set resource limits, niceness, environment variables, change user or group IDs for the process, chroot it, optionally close standard file decriptors or start a new process group. It thus provides some of the features of 'start-stop-daemon' for 'runit'-services, except that it does not background the program to be run. A 'runit' service worker is usually a script that sets everything up for running some real service executable, and finally 'exec's it with 'chpst' if necessary. Non-privleged users obviously cannot use some of the features of 'chpst'.
+
+In BB runit operation, each service normally consists of 2 or 3 processes:
+
+* a 'runsv' supervisor
+* a 'svlogd' logger
+* a service worker script that sets up the service environment and finally 'exec's some service binary with 'chpst'.
+
+The configuration for 'runsvc' and 'svlogd' is kept as files in a service directory.
+
+All service directories of the same service set are children (or symlinks to) a parent directory which is supervised by a single 'runsvcdir' top-level supervisor process for that service set.
+
+There may be many service sets be active at the same time, controlled by independent instances of 'runsvcdir'.
+
+Service dependencies are not handled by 'runit' and its supervisor processes, but rather by the service worker scripts themselves. The should check whether all available dependent services are already running, and terminate otherwise. Optionally, they can use 'sv' to start the missing dependent service before terminating.
+
+The 'runsv'-supervisor associated with the service worker script will eventually re-start the worker script after a couple of seconds, and then it can check for the availability of its required resources again before finally exec'ing the actual service executable (typically with chpst).
+
+The service-directory for a 'runit'-supervised process is the working process where its 'runsv'-instance has been started. Those service directories are normally subdirectories (or symlinks to directories) of the services directory managed by a 'runsvdir' instance.
+
+'runsv' assumes a particular directory layout for its working (the "service") directory:
+
+'./supervise/*':: service state such as PID files, managed by 'runsv' itself and also by 'sv'. The directory itself needs to exist but can be empty, and will be populated as needed by the various 'runit' commands.
+
+'./run':: This is the only mandatory script/executable. It represents the service worker process. It it terminates prematurely, its associated 'runsv' supervisor will restart it after a short delay.
+
+'./finish':: An optional script called after 'sv down' has terminated the service worker. Gets the 'exit'/'waitpid' return values of './run' as arguments for evaluation. This script typcally does cleanup, such as stopping helper services no longer needed.
+
+'./check':: An optional script to check whether the service up and available; it's considered to be available if './check' exits with a return value of '0'.
+
+'./log/*':: If this subdirectory is present, an associated logging process is automatically managed for the service worker. In fact, this subdirectory is just the base directory for another supervised service. Is has is own './log/supervise/*' subdirectory, './log/run'-script etc. Normally, this is used to start a 'svlogd'-worker process. 'runsv' automatically routes the output of the './run'-script as the input for the './log/run'-script. An optional logging configuration file './log/config' may also exist.
+
+Virtually every file or directory described above can also be a symlink. This allows, for instance, relocating non-static files to '/var/run', '/tmp', '/var/log' or similar, so that the actual service directory and its subdirectories may be located on a read-only filesystem.
+
+Symlinks can also be used to simulate "run levels", by making '/var/service' a symlink to the actual runlevel service directory to be used. For instance. '/etc' may be on a read-only filesystem, '/var/service' may be a symlink somewhere into '/var/run', and there may be a (writable) symlink back to one of multiple alternative runlevel services-directories in the readonly '/etc'. Changing the current runlevel is then performed by simply changing the symlink target.
+
+
+The 'sv' command
+----------------
+
+This is the usage of the BusyBox 'sv'-implementation:
+
+----
+Usage: sv [-v] [-w SEC] CMD SERVICE_DIR...
+
+Control services monitored by runsv supervisor.
+Commands (only first character is enough):
+
+status: query service status
+up: if service isn't running, start it. If service stops, restart it
+once: like 'up', but if service stops, don't restart it
+down: send TERM and CONT signals. If ./run exits, start ./finish if it exists. After it stops, don't restart service
+exit: send TERM and CONT signals to service and log service. If they exit, runsv exits too
+pause, cont, hup, alarm, interrupt, quit, 1, 2, term, kill: send STOP, CONT, HUP, ALRM, INT, QUIT, USR1, USR2, TERM, KILL signal to service
+----
+
+
+In more detail
+~~~~~~~~~~~~~~
+
+status::
++
+Report the current status of the service, and the associated 'svlogd' service if available, to standard output.
+
+up::
++
+If the service is not running, start it. If the service stops, restart it.
+
+down::
++
+If the service is running, send it the 'TERM' signal, and the 'CONT' signal. If './run' exits, start './finish' if it exists. After it stops, do not restart service.
+
+once::
++
+--
+If the service is not running, start it. Do not restart it if it stops.
+
+* pause
+* cont
+* hup
+* alarm
+* interrupt
+* quit
+* 1
+* 2
+* term
+* kill
+
+If the service is running, send it the 'STOP', 'CONT', 'HUP', 'ALRM', 'INT', 'QUIT', 'USR1', 'USR2', 'TERM', or 'KILL' signal respectively.
+--
+
+exit::
++
+If the service is running, send it the 'TERM' signal, and the 'CONT' signal. Do not restart the service. If the service is down, and no log service exists, 'runsv' exits. If the service is down and a log service exists, send the 'TERM' signal to the log service. If the log service is down, 'runsv' exits. This command is ignored if it is given to an associated 'svlogd' service.
+
+'sv' actually looks only at the first character of above commands.
+
+
+Comparison with LSB-subcommands
+-------------------------------
+
+Commands compatible to LSB init script actions (not directly supported by BusyBox 'sv', but rather how they could be emulated / differ from the sv subcommands):
+
+status::
++
+Same as status.
+
+start::
++
+Same as up, but wait up to 7 seconds for the command to take effect. Then report the status or timeout. If the script './check' exists in the service directory, 'sv' runs this script to check whether the service is up and available; it's considered to be available if './check' exits with '0'.
+
+stop::
++
+Same as down, but wait up to 7 seconds for the service to become down. Then report the status or timeout.
+
+restart::
++
+Send the commands term, cont, and up to the service, and wait up to 7 seconds for the service to restart. Then report the status or timeout. If the script './check' exists in the service directory, 'sv' runs this script to check whether the service is up and available again; it's considered to be available if './check' exits with '0'.
+
+shutdown::
++
+Same as exit, but wait up to 7 seconds for the 'runsv' process to terminate. Then report the status or timeout.
+
+force-stop::
++
+Same as down, but wait up to 7 seconds for the service to become down. Then report the status, and on timeout send the service the kill command.
+
+force-reload::
++
+Send the service the term and cont commands, and wait up to 7 seconds for the service to restart. Then report the status, and on timeout send the service the kill command.
+
+force-restart::
++
+Send the service the term, cont and up commands, and wait up to 7 seconds for the service to restart. Then report the status, and on timeout send the service the kill command. If the script './check' exists in the service directory, 'sv' runs this script to check whether the service is up and available again; it's considered to be available if './check' exits with '0'.
+
+force-shutdown::
++
+Same as exit, but wait up to 7 seconds for the 'runsv' process to terminate. Then report the status, and on timeout send the service the kill command.
+
+
+Additional Commands
+~~~~~~~~~~~~~~~~~~~
+
+check::
++
+Check for the service to be in the state that's been requested. Wait up to 7 seconds for the service to reach the requested state, then report the status or timeout. If the requested state of the service is up, and the script './check' exists in the service directory, 'sv' runs this script to check whether the service is up and running; it's considered to be up if './check' exits with '0'.
+
+
+Options
+~~~~~~~
+
+* '-v'
+
+wait up to 7 seconds for the command to take effect. Then report the status or timeout.
+
+* '-w sec'
+
+Override the default timeout of 7 seconds with sec seconds. Implies -v.
+
+
+Environment
+~~~~~~~~~~~
+
+* SVDIR
+
+The environment variable '$SVDIR' overrides the default services directory '/var/service'. Note that the default location can also be changed in the build configuration used for compiling BusyBox.
+
+* SVWAIT
+
+The environment variable '$SVWAIT' overrides the default 7 seconds to wait for a command to take effect. It is overridden by the '-w' option.
+
+
+Exit Codes
+~~~~~~~~~~
+
+'sv' exits with a return code of '0' if the command was successfully sent to all services, and, if it was told to wait, the command has taken effect to all services.
+
+For each service that caused an error (e.g. the directory is not controlled by a 'runsv' process, or 'sv' timed out while waiting), 'sv' increases the exit code by one and exits non zero. The maximum is '99'. 'sv' exits '100' on error.

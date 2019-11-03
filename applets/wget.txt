@@ -1,0 +1,43 @@
+wget [-c|--continue] [--spider] [-q|--quiet] [-O|--output-document FILE]
+     [--header 'header: value'] [-Y|--proxy on/off] [-P DIR]
+     [-U|--user-agent AGENT] [-T SEC] URL...
+
+Retrieve files via HTTP or FTP
+        --spider        Spider mode - only check file existence"
+        -c              Continue retrieval of aborted transfer"
+        -q              Quiet"
+        -P DIR          Save to DIR (default .)"
+        -T SEC          Network read timeout is SEC seconds"
+        -O FILE         Save to FILE ('-' for stdout)"
+        -U STR          Use STR for User-Agent header"
+        -Y on/off       Use proxy"
+
+wget URLs:
+
+"Real" wget 'http://busybox.net?var=a/b' sends this request:
+  'GET /?var=a/b HTTP 1.0'
+  and saves 'index.html?var=a%2Fb' (we save 'b')
+wget 'http://busybox.net?login=john@doe':
+  request: 'GET /?login=john@doe HTTP/1.0'
+  saves: 'index.html?login=john@doe' (we save '?login=john@doe')
+wget 'http://busybox.net#test/test':
+  request: 'GET / HTTP/1.0'
+  saves: 'index.html' (we save 'test')
+
+Authorization:
+
+wget http://test:my%20pass@example.com should send
+Authorization: Basic dGVzdDpteSBwYXNz
+which decodes to "test:my pass".
+Standard wget and curl do this too.
+
+
+Proxy:
+
+Proxies must support HTTP/1.1 and "Range"-requests
+
+The proxy settings are taken from the environment variables ftp_proxy and
+http_proxy.
+
+Depending on the BusyBox configuration, IPv6 and https://-URLs, and
+"Proxy-Authorization: Basic" might also be supported.
