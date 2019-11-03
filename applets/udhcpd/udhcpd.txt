@@ -24,3 +24,5 @@ It is actually a copy of the file examples/udhcp/udhcpd.conf from the BusyBox so
 If you have a recent version of that source archive available, it might be better to look at the corresponding file in the source archive rather than at the copy here, because it might be outdated.
 
 On the other hand, the most frequently used options are unlikely to change in future versions of the example file, so the local copy in THIS directory might still be good enough.
+
+udhcpd (as of 2017) has a big problem, though: It listens on *all* interfaces for DHCP requests, not only on the specified interface! Which means one cannot start multiple instances serving different networks on the same machine.
