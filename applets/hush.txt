@@ -1,0 +1,1 @@
+hush does not provide tilde-expansion, so it is not POSIX compliant and should therefore not be used as /bin/sh.

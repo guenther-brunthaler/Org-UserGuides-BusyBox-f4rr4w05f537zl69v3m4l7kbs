@@ -1,0 +1,5 @@
+When BusyBox init is instructed to re-execute itself, it does not try to to pass the list of running and monitored inittab-entries to the new instance somehow.
+
+Instead, it kills all running inittab-processes first, exec's the new init instance next, and that instance will then (hopefully) re-start the inittab-processes as needed.
+
+This means that the shell which instructed inittab to re-execute will always be killed as well, at least if it is a regular shell from a former getty login in inittab.
