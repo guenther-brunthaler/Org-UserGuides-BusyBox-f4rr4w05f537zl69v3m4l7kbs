@@ -1,6 +1,6 @@
 runit
 =====
-v2019.271
+v2019.314
 
 BusyBox contains a minimalistic implementation of the 'runit' service management suite.
 
@@ -8,7 +8,7 @@ It is more flexible than 'init' and can also be run by non-privileged users for 
 
 The following BusyBox utilities are part of BusyBox' mimimalistic 'runit' suite and are explained in details in their own documents:
 
-runsvdir:: The top-level service set supervisor. Spawns 'runsv'-daemons for every subdirectory of its services directory, and respawns such daemons which have terminated. It also kills 'runsv'-daemons which have no longer a service subdirectory. The default services directory is '/var/service', but an arbitrary directory may be specified instead. Up to 1000 service subdirectories can be supervised by an instance of 'runsvcdir'.
+runsvdir:: The top-level service set supervisor. Spawns 'runsv'-daemons for every subdirectory of its services directory, and respawns such daemons which have terminated. It also kills 'runsv'-daemons which have no longer a service subdirectory. The default services directory is '/var/service', but an arbitrary directory may be specified instead. Up to 1000 service subdirectories can be supervised by an instance of 'runsvcdir'. If this command is run as PID 1, it will never terminate. However, the -S option can be used to spawn scripts when the process receives signals. When not run as PID 1, it responds to certain signals and can also be terminated that way.
 
 runsv:: The service supervisor. Should normally never die, but will be restarted by 'runsvdir' if it does. Supervises a single service. Monitors its intended state (controlled via 'sv'), and spawns or kills a service process accordingly.  The service state and configuration files are normally placed in the 'supervise'-subdirectory/symlink of the service directory for a particular 'runsv'-supervisor. 'runsv' is not normally started explicitly, but will be spawned by some running 'runsvdir' instance.
 
