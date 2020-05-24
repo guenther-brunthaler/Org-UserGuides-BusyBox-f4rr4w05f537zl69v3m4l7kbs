@@ -1,7 +1,8 @@
 #! /bin/sh
-a2x.py -f text vi.asciidoc
-sed -e 's,ü,ue,g' vi.text \
-| iconv -t ISO-8859-1 \
-| tr $'\xa0' ' ' \
-| iconv -f ISO-8859-1 -t US-ASCII > vi.asc
-rm vi.text
+out=vi.text
+nbsp=`echo +AKA-x | iconv -f UTF-7`; nbsp=${nbsp%x}
+ue=`echo +APw- | iconv -f UTF-7`
+a2x -f text vi.asciidoc
+sed "s,$ue,ue,g; y/$nbsp/ /" "$out" \
+| iconv -t US-ASCII > vi.asc
+rm "$out"

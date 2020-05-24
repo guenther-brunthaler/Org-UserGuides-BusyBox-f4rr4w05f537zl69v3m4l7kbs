@@ -1,10 +1,13 @@
 BusyBox VI clone
 ================
 Günther Brunthaler
+v2020.145
+
 
 There seems to be no comprehensive guide on that minimalistic VI implementation.
 
 I tried to figure out which commands BusyBox VI supports, and document them here.
+
 
 Command line arguments
 ----------------------
@@ -16,6 +19,7 @@ The -R mode opens a file in readonly mode.
 -H displays a summary of implemented features.
 
 Otherwise, only a file name is expected as an argument.
+
 
 Initial (non-edit) mode
 -----------------------
@@ -74,11 +78,19 @@ Initial (non-edit) mode
 | '   | Jump to the line of a previously set bookmark whose name matches the following typed letter.
 |=================================
 
-The movement commands can be prefixed with an integer specifying repetition of the command for that many times, i. e. "3w" moved 3 words to the right.
+.Prefix commands
+[options="autowidth"]
+|=================================
+| " | Switch to a particular cut buffer. Must be followed by a letter which identifies the buffer.
+| 5 | (actually all decimal digits and not just '5') Multi-digit repetition prefix for following command
+|=================================
+
+Movement-, deletion- and character-based commands can be prefixed with a decimal integer specifying a repetition count for the following command, i. e. "3w" moves 3 words to the right.
 
 The optional integer prefix can in turn be prefixed by a [double-quote][letter] prefix. This assigns the buffer named with the letter to the command.
 
-Deleted text will then be stored in that buffer; text to put with "p"/"P" will be taken from it.
+Deleted or copied ("yanked") text will then be stored in that buffer; text to put with "p"/"P" will be taken from it.
+
 
 Deletion commands
 -----------------
@@ -109,6 +121,10 @@ Both commands are very different from "r" which only replaces a single character
 
 All commands are actual 2-letter commands and not just 1-letter commands with a modifier. Repetition prefixes therefore have to go before the whole command and not between the two letters. I. e., "4dd" deletes 4 lines.
 
+
+Search Commands
+---------------
+
 .Searching
 [options="autowidth"]
 |=================================
@@ -122,6 +138,10 @@ All commands are actual 2-letter commands and not just 1-letter commands with a 
 
 In BusyBox, none of those search commands work for specifying a text region to operate on.
 
+
+Indentation
+-----------
+
 .Action commands
 [options="autowidth"]
 |=================================
@@ -130,6 +150,12 @@ In BusyBox, none of those search commands work for specifying a text region to o
 |=================================
 
 Shifting is done by inserting/removing one tab character ('\t' in C). The tab display width can be changed with the ":set" command. Spaces cannot be inserted/removed by this command.
+
+
+Command mode
+------------
+
+The following commands are only available at the command prompt, i. e. after leaving interactive mode by pressing [Esc] and pressing the [:] key.
 
 .Colon mode
 [options="autowidth"]
@@ -156,7 +182,17 @@ The lines deleted by the colon mode "d" command are saved in a buffer which can 
 .Colon mode "set" commands
 [options="autowidth"]
 |=================================
-| set all          | Display a list of settable options.
-| set option=value | Set a new option value.
+| set all          | Display a list of settable options. (Actually, displays the current option values.)
+| set              | (undocumented) Does the same.
+| set tabstop=<n>  | Set tab width to <n> columns. (Initially 8.)
+| set autoindent   | Enable copying whitespace prefix of the previous line to the beginning of a new one.
+| set noautoindent | Disable auto-indentation.
+| set flash        | Enable visual screen flashes for indicating error conditions.
+| set noflash      | Enable audible beeps for indicating error conditions.
+| set ignorecase   | Make search/replace case-insensitive.
+| set noignorecase | Make search/replace case-senstitive
+| set showmatch    | When entering one of ()  []  {}, shortly
+move the cursor to the matching other bracket, and then back to where it was.
+| set noshowmatch  | Disable the showmatch functionality.
 |=================================
 
