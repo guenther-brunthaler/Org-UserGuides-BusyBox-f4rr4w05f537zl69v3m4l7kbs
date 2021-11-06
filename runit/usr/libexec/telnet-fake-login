@@ -1,0 +1,4 @@
+#! /bin/sh -e
+# v2021.310
+
+exec /usr/libexec/fake-login "${1:-root}"

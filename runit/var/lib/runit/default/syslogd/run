@@ -4,4 +4,4 @@
 # The log buffer will be placed in RAM with this size. Use "logread" to read.
 logbuffer_KiB=1536
 
-syslogd -nDtC"$logbuffer_KiB"
+exec syslogd -nDtC"$logbuffer_KiB"

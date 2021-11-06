@@ -1,0 +1,4 @@
+#! /bin/sh -e
+# v2021.310
+
+exec haveged -F -r 0 -v -1

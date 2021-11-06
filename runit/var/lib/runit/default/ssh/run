@@ -1,0 +1,10 @@
+#! /bin/sh -e
+# v2021.310
+
+sep=/var/run/sshd
+
+if test ! -d "$sep"
+then
+    mkdir -m 755 -p -- "$sep"
+fi
+exec /usr/sbin/sshd -f /etc/ssh/sshd_config -D

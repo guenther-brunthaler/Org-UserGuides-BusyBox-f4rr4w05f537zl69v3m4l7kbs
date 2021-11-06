@@ -1,6 +1,7 @@
 #! /bin/sh -e
 # v2021.310
+
 d=`basename -- "$PWD"`
 d=/dev/$d
 test -c "$d"
-exec /sbin/getty -l /usr/libexec/fake-login 38400 $d linux
+exec getty -l /usr/libexec/fake-login 38400 $d linux
