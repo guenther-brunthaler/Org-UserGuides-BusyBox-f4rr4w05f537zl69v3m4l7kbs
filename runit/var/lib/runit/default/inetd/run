@@ -1,0 +1,6 @@
+#! /bin/sh -e
+# v2021.310
+
+rate_limit_per_minute=12
+
+exec inetd -f -R "$rate_limit_per_minute"
