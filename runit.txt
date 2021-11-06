@@ -1,14 +1,14 @@
 runit
 =====
-v2019.314
+v2021.310
 
 BusyBox contains a minimalistic implementation of the 'runit' service management suite.
 
 It is more flexible than 'init' and can also be run by non-privileged users for managing their personal background services.
 
-The following BusyBox utilities are part of BusyBox' mimimalistic 'runit' suite and are explained in details in their own documents:
+The following BusyBox utilities are part of BusyBox' minimalistic 'runit' suite and are explained in details in their own documents:
 
-runsvdir:: The top-level service set supervisor. Spawns 'runsv'-daemons for every subdirectory of its services directory, and respawns such daemons which have terminated. It also kills 'runsv'-daemons which have no longer a service subdirectory. The default services directory is '/var/service', but an arbitrary directory may be specified instead. Up to 1000 service subdirectories can be supervised by an instance of 'runsvcdir'. If this command is run as PID 1, it will never terminate. However, the -S option can be used to spawn scripts when the process receives signals. When not run as PID 1, it responds to certain signals and can also be terminated that way.
+runsvdir:: The top-level service set supervisor. Spawns 'runsv'-daemons for every subdirectory of its services directory, and respawns such daemons which have terminated. It also kills 'runsv'-daemons which have no longer a service subdirectory. The traditional 'runit' services directory is '/var/service', but any directory may be specified. Up to 1000 service subdirectories can be supervised by an instance of 'runsvdir'. If this command is run as PID 1, it will never terminate. However, the -S option can be used to spawn scripts when the process receives signals. When not run as PID 1, it responds to certain signals and can also be terminated that way.
 
 runsv:: The service supervisor. Should normally never die, but will be restarted by 'runsvdir' if it does. Supervises a single service. Monitors its intended state (controlled via 'sv'), and spawns or kills a service process accordingly.  The service state and configuration files are normally placed in the 'supervise'-subdirectory/symlink of the service directory for a particular 'runsv'-supervisor. 'runsv' is not normally started explicitly, but will be spawned by some running 'runsvdir' instance.
 
@@ -18,7 +18,7 @@ svc:: An alternative to 'sv'. Does basically the same with a different command l
 
 svlogd:: 'stdout'-capturing logger. 'runsv'-controlled services frequently do not log to 'syslog' nor to particular log files, and neither do they daemonize as background processes. Instead, they just run their service in the foreground and write their log messages to standard output. 'svlogd' collects such output and can write them to per-service rotated log-files. Alternatively, log messages can (unreliably) be sent via UDP. The 'svlogd'-files are normally placed in a 'log'-subdirectory/symlink of the service directory for a particular 'runsv'-supervisor. 'svlogd' is not normally started explicitly, but will rather be spawned automatically by 'runsv' if it detects a 'log' subdirectory in its associated service directory. If logging is not wanted for some service, just redirect its output to '/dev/null' and don't use 'svlogd' at all.
 
-chpst:: service resource setup helper. This program can set resource limits, niceness, environment variables, change user or group IDs for the process, chroot it, optionally close standard file decriptors or start a new process group. It thus provides some of the features of 'start-stop-daemon' for 'runit'-services, except that it does not background the program to be run. A 'runit' service worker is usually a script that sets everything up for running some real service executable, and finally 'exec's it with 'chpst' if necessary. Non-privleged users obviously cannot use some of the features of 'chpst'.
+chpst:: service resource setup helper. This program can set resource limits, niceness, environment variables, change user or group IDs for the process, chroot it, optionally close standard file descriptors or start a new process group. It thus provides some of the features of 'start-stop-daemon' for 'runit'-services, except that it does not background the program to be run. A 'runit' service worker is usually a script that sets everything up for running some real service executable, and finally 'exec's it with 'chpst' if necessary. Non-privileged users obviously cannot use some of the features of 'chpst'.
 
 In BB runit operation, each service normally consists of 2 or 3 processes:
 
@@ -26,11 +26,11 @@ In BB runit operation, each service normally consists of 2 or 3 processes:
 * a 'svlogd' logger
 * a service worker script that sets up the service environment and finally 'exec's some service binary with 'chpst'.
 
-The configuration for 'runsvc' and 'svlogd' is kept as files in a service directory.
+The configuration for 'runsv' and 'svlogd' is kept as files in a service directory.
 
-All service directories of the same service set are children (or symlinks to) a parent directory which is supervised by a single 'runsvcdir' top-level supervisor process for that service set.
+All service directories of the same service set are children (or symlinks to) a parent directory which is supervised by a single 'runsvdir' top-level supervisor process for that service set.
 
-There may be many service sets be active at the same time, controlled by independent instances of 'runsvcdir'.
+There may be many service sets be active at the same time, controlled by independent instances of 'runsvdir'.
 
 Service dependencies are not handled by 'runit' and its supervisor processes, but rather by the service worker scripts themselves. The should check whether all available dependent services are already running, and terminate otherwise. Optionally, they can use 'sv' to start the missing dependent service before terminating.
 
@@ -40,7 +40,7 @@ The service-directory for a 'runit'-supervised process is the working process wh
 
 'runsv' assumes a particular directory layout for its working (the "service") directory:
 
-'./supervise/*':: service state such as PID files, managed by 'runsv' itself and also by 'sv'. The directory itself needs to exist but can be empty, and will be populated as needed by the various 'runit' commands.
+'./supervise/*':: service state such as PID files, managed by 'runsv' itself and also by 'sv'. The directory will be created automatically if it does not exist. It can also be created manually in advance as an empty directory which will be populated as needed by the various 'runit' commands.
 
 './run':: This is the only mandatory script/executable. It represents the service worker process. It it terminates prematurely, its associated 'runsv' supervisor will restart it after a short delay.
 
@@ -49,6 +49,8 @@ The service-directory for a 'runit'-supervised process is the working process wh
 './check':: An optional script to check whether the service up and available; it's considered to be available if './check' exits with a return value of '0'.
 
 './log/*':: If this subdirectory is present, an associated logging process is automatically managed for the service worker. In fact, this subdirectory is just the base directory for another supervised service. Is has is own './log/supervise/*' subdirectory, './log/run'-script etc. Normally, this is used to start a 'svlogd'-worker process. 'runsv' automatically routes the output of the './run'-script as the input for the './log/run'-script. An optional logging configuration file './log/config' may also exist.
+
+The scripts will be called by 'runsv' as `./run` etc. after changing the current directory to the service directory. `$PWD` can be used by the scripts to obtain the absolute path as usual. (Symlinks will not have not been resolved automatically, which is useful by symlinking the same `run`-script into different service directories. Then `$PWD` can be used to differentiate between the symlinks and act accordingly.)
 
 Virtually every file or directory described above can also be a symlink. This allows, for instance, relocating non-static files to '/var/run', '/tmp', '/var/log' or similar, so that the actual service directory and its subdirectories may be located on a read-only filesystem.
 

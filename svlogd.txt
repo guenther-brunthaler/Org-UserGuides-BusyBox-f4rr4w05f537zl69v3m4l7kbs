@@ -13,7 +13,7 @@ Usage: svlogd [-ttv] [-r C] [-R CHARS] [-l MATCHLEN] [-b BUFLEN] DIR...
 
 This optionally reads a configuration file from DIR/config, and then continuosly reads lines from standard input considering them to be log messages.
 
-The messages are then appendet to DIR/current and may optionally be preceded by a medium-resolution (but still much higher than seconds) UTC time stamp.
+The messages are then appended to DIR/current and may optionally be preceded by a medium-resolution (but still much higher than seconds) UTC time stamp.
 
 -v: writes messages regarding the logger itself to standard error. This are messages about starting/stopping the logging process, and about logfile rotation. Normally not useful unless these messages are forwarded to another logger.
 
