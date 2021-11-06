@@ -1,0 +1,9 @@
+#! /bin/sh -e
+# v2021.310
+
+# Print messages more urgent than this priority directly to the terminal
+# console. Message priorities have values from 1 through 8. "more urgent"
+# means numerically less.
+console_urgency=1
+
+exec klogd -nc $console_urgency

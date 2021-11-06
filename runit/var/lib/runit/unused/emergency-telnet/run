@@ -1,0 +1,4 @@
+#! /bin/sh -e
+# v2021.310
+
+exec telnetd -l /usr/libexec/fake-login -FS -p 2323
