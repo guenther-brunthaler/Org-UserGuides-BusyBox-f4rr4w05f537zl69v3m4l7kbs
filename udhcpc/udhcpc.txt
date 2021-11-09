@@ -1,11 +1,22 @@
 BusyBox udhcpc
 ==============
+v2021.310
 
-This is a DHCP client which runs a script ("/usr/share/udhcpc/default.script" by default) whenever DHCP events occur.
+This is a DHCP client which runs a script ("/usr/share/udhcpc/default.script" by default, but can be overridden with the "-s" option) whenever DHCP events occur.
+
+If you don't have a script, the following one might prove useful:
+
+#! /bin/sh
+exec > /tmp/dhcp.dump
+date
+env
+
 
 The script is passed information via exported environment variables as well as via its first argument.
 
-Possible first arguments:
+Strangely, it seems that udhcpc actually sets *more* variables than less when specifying the "-o" option. It is therefore recommended to do this.
+
+Possible first script arguments:
 
 deconfig
 leasefail
@@ -13,21 +24,34 @@ bound
 renew
 nak
 
-Environment variables:
+
+Environment variables (normally set):
+
 interface=IFACE
-ip=N.N.N.N
+ip=N.N.N.N # IP address of client
+subnet=N.N.N.N # subnet mask
+broadcast=N.N.N.N # broadcast address
 siaddr=IP # IP address of next server to use in bootstrap
-boot_file=FILE
-sname=SERVER_HOSTNAME
-mask=UINT # Hmmm ... subnet mask as an integer?
-opt$UINT=$HEXSTRING
+boot_file=/path/to/tftp/boot/FILE
+serverid=N.N.N.N # IP address of DHCP server
+mask=UINT # length of network prefix in $ip as number of bits
+
+
+Environment variables (may also be set):
+
+sname=NAME # hostname of DHCP server
+router=N.N.N.N # IP address of default gateway
+domain=DNS_NAME # FQDN for network of $sname
+dns=N.N.N.N # DNS server to be used
+lease=UINT # remaining lease time in seconds, (2^32)-1 for infinite
+hostname=FQDN # hostname of client within $domain
+opt$UINT=$HEXSTRING (all remaining DHCP options)
+
 
 'router' option [21]
 
 Your ISP better supply the "ip" and "subnet" 
-variables or all of this is for not. 
-"router", "dns", "lease" should be there also
-along with a few others.
+variables or all of this is for nothing.
 
 OPTION_STATIC_ROUTES
 "IP/MASK ROUTER IP2/MASK2 ROUTER2"
