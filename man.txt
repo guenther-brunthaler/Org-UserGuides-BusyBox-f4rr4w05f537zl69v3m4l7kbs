@@ -1,0 +1,11 @@
+The "man" applet of BB is next to useless: It just tries to 
+invoke the full nroff/troff toolchain as the original "man" 
+would.
+
+It has no ability at all to replace the heavyweight tools of that 
+toolchain and format the man pages itself somehow.
+
+My impression is that if a system installation is large enough to 
+host the 12 MB troff toolchain, then it is also large enough to 
+host the original "man" utility - no BB version of it needed at 
+all.
